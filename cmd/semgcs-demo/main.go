@@ -11,6 +11,7 @@ import (
 	"syscall"
 	"time"
 
+	csbridge "github.com/c360studio/semlink/internal/csapi"
 	"github.com/c360studio/semlink/internal/gcs"
 	semruntime "github.com/c360studio/semlink/internal/semstreams"
 )
@@ -24,6 +25,9 @@ func main() {
 		hz             = flag.Int("hz", 20, "simulator ticks per second")
 		bufferCapacity = flag.Int("buffer", 10000, "raw telemetry buffer capacity")
 		staticDir      = flag.String("static", filepath.Join("ui", "dist"), "built UI static directory")
+		csapiURL       = flag.String("csapi-url", getenv("CS_API_URL", ""), "optional SemConnect CS API base URL for standards projection")
+		csapiInterval  = flag.Duration("csapi-interval", 2*time.Second, "SemConnect CS API bridge sync interval")
+		csapiObsEvery  = flag.Duration("csapi-observation-interval", 5*time.Second, "minimum interval between CS API observations per datastream")
 	)
 	flag.Parse()
 
@@ -49,6 +53,23 @@ func main() {
 	}()
 
 	store := gcs.NewStore(rt.NATSURL, *embeddedNATS)
+	if *csapiURL != "" {
+		bridge, err := csbridge.NewBridge(csbridge.Config{
+			BaseURL:             *csapiURL,
+			Interval:            *csapiInterval,
+			ObservationInterval: *csapiObsEvery,
+			Logger:              logger,
+		}, store)
+		if err != nil {
+			logger.Error("failed to create CS API bridge", slog.Any("error", err))
+			os.Exit(1)
+		}
+		bridge.Start(ctx)
+		logger.Info("SemConnect CS API bridge enabled",
+			slog.String("csapi_url", *csapiURL),
+			slog.Duration("sync_interval", *csapiInterval),
+			slog.Duration("observation_interval", *csapiObsEvery))
+	}
 	demo, err := gcs.NewDemo(gcs.DemoConfig{
 		Vehicles:       *vehicles,
 		Hz:             *hz,

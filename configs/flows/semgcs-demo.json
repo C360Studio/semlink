@@ -48,6 +48,24 @@
           {"entity_pattern": "c360.semlink.robotics.fleet.command.*", "indexing_profile": "control"}
         ]
       }
+    },
+    "semlink-csapi-bridge": {
+      "type": "optional-external-product",
+      "name": "semlink-csapi-bridge",
+      "config": {
+        "enabled_when": "cmd/semgcs-demo -csapi-url is set",
+        "target": "SemConnect OGC API Connected Systems",
+        "demo_topology": "two NATS/SemStreams stacks connected by HTTP bridge",
+        "projection_policy": "curated low-rate standards view; raw MAVLink remains on MAVLINK_RAW",
+        "resources": [
+          "System",
+          "Datastream",
+          "Observation",
+          "SystemEvent",
+          "ControlStream",
+          "Command"
+        ]
+      }
     }
   }
 }
