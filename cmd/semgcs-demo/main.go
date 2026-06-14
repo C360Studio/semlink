@@ -1,0 +1,96 @@
+package main
+
+import (
+	"context"
+	"flag"
+	"log/slog"
+	"net/http"
+	"os"
+	"os/signal"
+	"path/filepath"
+	"syscall"
+	"time"
+
+	"github.com/c360studio/semlink/internal/gcs"
+	semruntime "github.com/c360studio/semlink/internal/semstreams"
+)
+
+func main() {
+	var (
+		listen         = flag.String("listen", ":8080", "HTTP listen address")
+		natsURL        = flag.String("nats-url", getenv("NATS_URL", "nats://127.0.0.1:4222"), "NATS URL used when -embedded-nats=false")
+		embeddedNATS   = flag.Bool("embedded-nats", true, "start a local NATS JetStream container for the demo")
+		vehicles       = flag.Int("vehicles", 12, "number of simulated vehicles")
+		hz             = flag.Int("hz", 20, "simulator ticks per second")
+		bufferCapacity = flag.Int("buffer", 10000, "raw telemetry buffer capacity")
+		staticDir      = flag.String("static", filepath.Join("ui", "dist"), "built UI static directory")
+	)
+	flag.Parse()
+
+	logger := slog.New(slog.NewTextHandler(os.Stdout, &slog.HandlerOptions{Level: slog.LevelInfo}))
+	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
+	defer stop()
+
+	rt, err := semruntime.StartRuntime(ctx, semruntime.RuntimeOptions{
+		NATSURL:  *natsURL,
+		Embedded: *embeddedNATS,
+		Logger:   logger,
+	})
+	if err != nil {
+		logger.Error("failed to start SemStreams runtime", slog.Any("error", err))
+		os.Exit(1)
+	}
+	defer func() {
+		stopCtx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+		defer cancel()
+		if err := rt.Stop(stopCtx); err != nil {
+			logger.Warn("runtime stop failed", slog.Any("error", err))
+		}
+	}()
+
+	store := gcs.NewStore(rt.NATSURL, *embeddedNATS)
+	demo, err := gcs.NewDemo(gcs.DemoConfig{
+		Vehicles:       *vehicles,
+		Hz:             *hz,
+		BufferCapacity: *bufferCapacity,
+		Logger:         logger,
+	}, rt, store)
+	if err != nil {
+		logger.Error("failed to create demo", slog.Any("error", err))
+		os.Exit(1)
+	}
+	demo.Start(ctx)
+
+	commands := gcs.NewCommandService(rt.Graph, store)
+	server := &http.Server{
+		Addr:              *listen,
+		Handler:           gcs.NewServer(store, commands, *staticDir).Handler(),
+		ReadHeaderTimeout: 5 * time.Second,
+	}
+
+	go func() {
+		<-ctx.Done()
+		shutdownCtx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+		defer cancel()
+		_ = server.Shutdown(shutdownCtx)
+	}()
+
+	logger.Info("semgcs demo listening",
+		slog.String("listen", *listen),
+		slog.String("nats_url", rt.NATSURL),
+		slog.Bool("embedded_nats", *embeddedNATS),
+		slog.Int("vehicles", *vehicles),
+		slog.Int("hz", *hz))
+
+	if err := server.ListenAndServe(); err != nil && err != http.ErrServerClosed {
+		logger.Error("http server failed", slog.Any("error", err))
+		os.Exit(1)
+	}
+}
+
+func getenv(key, fallback string) string {
+	if value := os.Getenv(key); value != "" {
+		return value
+	}
+	return fallback
+}

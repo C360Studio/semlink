@@ -1,0 +1,13 @@
+ticket: FEAT-001
+title: Prove SemStreams-backed high-volume telemetry control-plane demo
+assigned: program-manager
+depends_on: []
+blocks: []
+status: implemented
+reviewer: go-reviewer,svelte-reviewer
+scope:
+  - Own MAVLink v2 subset decoder in SemLink
+  - Simulate raw telemetry without MAVSDK
+  - Use SemStreams graph-ingest mutation and query contracts
+  - Show signal-profiled current state and control-profiled alerts/commands
+  - Provide Svelte operator dashboard

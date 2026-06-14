@@ -1,0 +1,53 @@
+{
+  "id": "semgcs-demo",
+  "name": "SemGCS telemetry control-plane demo",
+  "description": "SemStreams graph-ingest demo; raw MAVLink stays on MAVLINK_RAW, projections land in ENTITY_STATES.",
+  "streams": [
+    {
+      "name": "MAVLINK_RAW",
+      "subjects": ["mavlink.raw.>"],
+      "storage": "memory",
+      "max_age": "5m",
+      "max_msgs": 250000,
+      "max_msgs_per_subject": 5000
+    },
+    {
+      "name": "ENTITY",
+      "subjects": ["entity.>"],
+      "storage": "memory"
+    }
+  ],
+  "components": {
+    "graph-ingest": {
+      "type": "processor",
+      "name": "graph-ingest",
+      "config": {
+        "ports": {
+          "inputs": [
+            {"name": "entity_stream", "type": "jetstream", "subject": "entity.>", "stream_name": "ENTITY"}
+          ],
+          "outputs": [
+            {"name": "entity_states", "subject": "ENTITY_STATES", "type": "kv-write"}
+          ]
+        }
+      }
+    },
+    "semlink-projector": {
+      "type": "external-product",
+      "name": "semlink-projector",
+      "config": {
+        "raw_stream": "MAVLINK_RAW",
+        "state_mutation_subjects": [
+          "graph.mutation.entity.create_with_triples",
+          "graph.mutation.entity.update_with_triples"
+        ],
+        "query_subject": "graph.ingest.query.entity",
+        "contracts": [
+          {"entity_pattern": "c360.semlink.robotics.fleet.drone.*", "indexing_profile": "signal"},
+          {"entity_pattern": "c360.semlink.robotics.fleet.alert.*", "indexing_profile": "control"},
+          {"entity_pattern": "c360.semlink.robotics.fleet.command.*", "indexing_profile": "control"}
+        ]
+      }
+    }
+  }
+}

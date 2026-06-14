@@ -1,0 +1,379 @@
+* {
+  box-sizing: border-box;
+}
+
+:root {
+  color: #eef4f0;
+  background: #17191a;
+  font-family:
+    Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  font-size: 15px;
+  letter-spacing: 0;
+}
+
+body {
+  margin: 0;
+  min-width: 320px;
+  min-height: 100vh;
+  background:
+    linear-gradient(135deg, rgba(30, 34, 34, 0.98), rgba(22, 24, 23, 0.98)),
+    #17191a;
+}
+
+button {
+  font: inherit;
+}
+
+.shell {
+  min-height: 100vh;
+  padding: 18px;
+}
+
+.topbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 18px;
+  margin: 0 auto 16px;
+  max-width: 1480px;
+}
+
+h1,
+h2,
+p {
+  margin: 0;
+}
+
+h1 {
+  font-size: 1.7rem;
+  font-weight: 760;
+}
+
+h2 {
+  font-size: 0.95rem;
+  font-weight: 720;
+}
+
+.topbar p,
+small,
+.metric-label,
+.quiet {
+  color: #aab8b0;
+}
+
+.top-metrics {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(86px, 1fr));
+  gap: 8px;
+}
+
+.top-metrics div,
+.panel {
+  border: 1px solid rgba(238, 244, 240, 0.1);
+  background: rgba(29, 32, 31, 0.92);
+  box-shadow: 0 14px 40px rgba(0, 0, 0, 0.24);
+}
+
+.top-metrics div {
+  border-radius: 6px;
+  padding: 8px 12px;
+}
+
+.top-metrics span {
+  display: block;
+  font-size: 1.15rem;
+  font-weight: 760;
+}
+
+.top-metrics .metric-label {
+  font-size: 0.72rem;
+  text-transform: uppercase;
+}
+
+.dashboard {
+  display: grid;
+  grid-template-columns: 250px minmax(420px, 1fr) 320px;
+  grid-template-rows: minmax(420px, 1fr) minmax(210px, auto);
+  gap: 14px;
+  max-width: 1480px;
+  margin: 0 auto;
+}
+
+.panel {
+  border-radius: 8px;
+  padding: 14px;
+  overflow: hidden;
+}
+
+.panel-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 12px;
+  color: #e8ede9;
+}
+
+.fleet {
+  grid-row: 1 / span 2;
+}
+
+.map-panel {
+  min-height: 420px;
+}
+
+.detail {
+  min-height: 420px;
+}
+
+.telemetry {
+  grid-column: 2;
+}
+
+.alerts {
+  grid-column: 3;
+}
+
+.vehicle-list,
+.alert-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.vehicle-list button {
+  display: grid;
+  grid-template-columns: 1fr 12px 44px;
+  align-items: center;
+  min-height: 42px;
+  width: 100%;
+  border: 1px solid rgba(238, 244, 240, 0.08);
+  border-radius: 6px;
+  background: #242827;
+  color: #eef4f0;
+  cursor: pointer;
+}
+
+.vehicle-list button.selected {
+  border-color: #5dd39e;
+  background: #23332c;
+}
+
+.vehicle-list button.offline {
+  border-color: rgba(255, 111, 97, 0.5);
+}
+
+.callsign {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  padding-left: 10px;
+  text-align: left;
+  font-weight: 680;
+}
+
+.status-dot {
+  width: 9px;
+  height: 9px;
+  border-radius: 999px;
+}
+
+.ok {
+  color: #5dd39e;
+}
+
+.warn {
+  color: #ffcb6b;
+}
+
+.danger {
+  color: #ff6f61;
+}
+
+.status-dot.ok {
+  background: #5dd39e;
+}
+
+.status-dot.danger {
+  background: #ff6f61;
+}
+
+.mission-map {
+  position: relative;
+  min-height: 350px;
+  height: calc(100% - 38px);
+  border-radius: 6px;
+  overflow: hidden;
+  background:
+    linear-gradient(rgba(238, 244, 240, 0.06) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(238, 244, 240, 0.06) 1px, transparent 1px),
+    linear-gradient(145deg, #20302b, #1b2322 55%, #28271f);
+  background-size: 36px 36px, 36px 36px, 100% 100%;
+}
+
+.runway {
+  position: absolute;
+  left: 16%;
+  top: 58%;
+  width: 68%;
+  height: 16px;
+  transform: rotate(-18deg);
+  border-radius: 999px;
+  background: repeating-linear-gradient(
+    90deg,
+    rgba(238, 244, 240, 0.32),
+    rgba(238, 244, 240, 0.32) 22px,
+    rgba(238, 244, 240, 0.08) 22px,
+    rgba(238, 244, 240, 0.08) 34px
+  );
+}
+
+.marker {
+  position: absolute;
+  width: 28px;
+  height: 28px;
+  margin: -14px 0 0 -14px;
+  border: 0;
+  background: transparent;
+  cursor: pointer;
+}
+
+.marker span {
+  display: block;
+  width: 0;
+  height: 0;
+  margin: 3px auto;
+  border-left: 9px solid transparent;
+  border-right: 9px solid transparent;
+  border-bottom: 22px solid currentColor;
+  filter: drop-shadow(0 2px 8px rgba(0, 0, 0, 0.45));
+}
+
+.marker.selected span {
+  border-bottom-color: #ffffff;
+}
+
+.readouts,
+.metrics-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 9px;
+}
+
+.readouts div,
+.metrics-grid div {
+  min-height: 58px;
+  border-radius: 6px;
+  background: #242827;
+  padding: 10px;
+}
+
+.readouts .metric-label,
+.metrics-grid .metric-label {
+  display: block;
+  margin-bottom: 4px;
+  font-size: 0.74rem;
+  text-transform: uppercase;
+}
+
+.readouts strong,
+.metrics-grid strong {
+  display: block;
+  overflow-wrap: anywhere;
+}
+
+.commands {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.commands button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  min-height: 40px;
+  border: 0;
+  border-radius: 6px;
+  background: #d7f3e5;
+  color: #14201a;
+  cursor: pointer;
+  font-weight: 720;
+}
+
+.commands button:disabled {
+  opacity: 0.55;
+  cursor: wait;
+}
+
+.error-line {
+  margin-top: 10px;
+  color: #ff9b91;
+  font-size: 0.88rem;
+}
+
+.alert-row {
+  display: grid;
+  grid-template-columns: 120px 1fr 64px;
+  gap: 10px;
+  align-items: center;
+  border-radius: 6px;
+  padding: 10px;
+  background: #242827;
+}
+
+.alert-row.warn {
+  border-left: 3px solid #ffcb6b;
+}
+
+.alert-row.danger {
+  border-left: 3px solid #ff6f61;
+}
+
+@media (max-width: 1050px) {
+  .dashboard {
+    grid-template-columns: 1fr;
+    grid-template-rows: auto;
+  }
+
+  .fleet,
+  .map-panel,
+  .detail,
+  .telemetry,
+  .alerts {
+    grid-column: 1;
+    grid-row: auto;
+  }
+
+  .vehicle-list {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  }
+}
+
+@media (max-width: 660px) {
+  .shell {
+    padding: 10px;
+  }
+
+  .topbar {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .top-metrics,
+  .commands,
+  .readouts,
+  .metrics-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .mission-map {
+    min-height: 310px;
+  }
+
+  .alert-row {
+    grid-template-columns: 1fr;
+  }
+}
