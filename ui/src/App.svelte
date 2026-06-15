@@ -4,24 +4,35 @@
     AlertTriangle,
     Battery,
     CirclePause,
+    Database,
+    GitFork,
     Home,
     MapPin,
     Radio,
     Send,
     ShieldCheck
   } from '@lucide/svelte';
-  import type { Alert, Snapshot, Vehicle } from './types';
+  import type { Alert, GraphEdge, GraphNode, GraphView, Snapshot, Vehicle } from './types';
 
   let snapshot = $state<Snapshot | null>(null);
   let selectedID = $state<string>('');
   let commandBusy = $state<string>('');
   let commandError = $state<string>('');
+  let graphView = $state<GraphView | null>(null);
+  let graphSource = $state<string>('semlink');
+  let graphError = $state<string>('');
+  let graphLoading = $state(false);
+  let lastGraphVehicleID = $state('');
 
   const vehicles = $derived(snapshot?.vehicles ?? []);
   const alerts = $derived((snapshot?.alerts ?? []).filter((alert) => alert.active).slice(0, 8));
   const selected = $derived(vehicles.find((vehicle) => vehicle.entity_id === selectedID) ?? vehicles[0]);
   const metrics = $derived(snapshot?.metrics);
   const bounds = $derived(makeBounds(vehicles));
+  const graphLenses = $derived(graphView?.lenses ?? []);
+  const activeGraphLens = $derived(graphLenses.find((lens) => lens.source === graphSource) ?? graphLenses[0]);
+  const graphNodes = $derived(layoutGraph(activeGraphLens?.nodes ?? []));
+  const graphEdges = $derived(layoutEdges(activeGraphLens?.edges ?? [], graphNodes));
 
   onMount(() => {
     void fetchSnapshot();
@@ -36,7 +47,18 @@
       events.close();
       setTimeout(() => void fetchSnapshot(), 1000);
     };
-    return () => events.close();
+    const graphTimer = window.setInterval(() => void fetchGraph(), 3000);
+    return () => {
+      events.close();
+      window.clearInterval(graphTimer);
+    };
+  });
+
+  $effect(() => {
+    if (selectedID && selectedID !== lastGraphVehicleID) {
+      lastGraphVehicleID = selectedID;
+      void fetchGraph(selectedID);
+    }
   });
 
   async function fetchSnapshot() {
@@ -44,6 +66,27 @@
     snapshot = (await response.json()) as Snapshot;
     if (!selectedID && snapshot.vehicles.length > 0) {
       selectedID = snapshot.vehicles[0].entity_id;
+    }
+  }
+
+  async function fetchGraph(vehicleID = selectedID) {
+    if (!vehicleID || graphLoading) return;
+    graphLoading = true;
+    graphError = '';
+    try {
+      const response = await fetch(`/api/graph?vehicle_id=${encodeURIComponent(vehicleID)}`);
+      if (!response.ok) {
+        graphError = await response.text();
+        return;
+      }
+      graphView = (await response.json()) as GraphView;
+      if (!graphView.lenses.some((lens) => lens.source === graphSource)) {
+        graphSource = graphView.lenses[0]?.source ?? 'semlink';
+      }
+    } catch (error) {
+      graphError = error instanceof Error ? error.message : 'graph unavailable';
+    } finally {
+      graphLoading = false;
     }
   }
 
@@ -63,6 +106,51 @@
     } finally {
       commandBusy = '';
     }
+  }
+
+  type PositionedNode = GraphNode & { x: number; y: number };
+  type PositionedEdge = GraphEdge & { x1: number; y1: number; x2: number; y2: number };
+
+  function layoutGraph(nodes: GraphNode[]): PositionedNode[] {
+    if (nodes.length === 0) return [];
+    const placed: PositionedNode[] = [];
+    for (const [index, node] of nodes.entries()) {
+      if (index === 0) {
+        placed.push({ ...node, x: 50, y: 50 });
+        continue;
+      }
+      const count = Math.max(1, nodes.length - 1);
+      const angle = -Math.PI / 2 + ((index - 1) / count) * Math.PI * 2;
+      placed.push({
+        ...node,
+        x: Math.min(84, Math.max(16, 50 + Math.cos(angle) * 35)),
+        y: Math.min(82, Math.max(18, 50 + Math.sin(angle) * 31))
+      });
+    }
+    return placed;
+  }
+
+  function layoutEdges(edges: GraphEdge[], nodes: PositionedNode[]): PositionedEdge[] {
+    return edges
+      .map((edge) => {
+        const from = nodes.find((node) => node.id === edge.from);
+        const to = nodes.find((node) => node.id === edge.to);
+        if (!from || !to) return null;
+        return { ...edge, x1: from.x, y1: from.y, x2: to.x, y2: to.y };
+      })
+      .filter((edge): edge is PositionedEdge => edge !== null);
+  }
+
+  function graphNodeStyle(node: PositionedNode) {
+    return `left:${node.x}%;top:${node.y}%;`;
+  }
+
+  function graphNodeClass(node: GraphNode) {
+    const status = (node.status ?? '').toLowerCase();
+    if (status.includes('critical') || status.includes('lost')) return 'danger-node';
+    if (status.includes('warning') || status.includes('requested')) return 'warn-node';
+    if (node.profile === 'control' || node.kind.toLowerCase().includes('command')) return 'control-node';
+    return 'signal-node';
   }
 
   function makeBounds(items: Vehicle[]) {
@@ -254,6 +342,83 @@
           <p class="quiet">Clear</p>
         {/each}
       </div>
+    </section>
+
+    <section class="panel graph-panel">
+      <div class="panel-title graph-title">
+        <div class="title-left">
+          <GitFork size={18} />
+          <h2>Graph</h2>
+        </div>
+        <div class="source-tabs" role="tablist" aria-label="Graph source">
+          {#each graphLenses as lens}
+            <button
+              class:active={activeGraphLens?.source === lens.source}
+              onclick={() => (graphSource = lens.source)}
+              type="button"
+              title={lens.summary}
+            >
+              {#if lens.source === 'csapi'}
+                <Database size={15} />
+              {:else}
+                <GitFork size={15} />
+              {/if}
+              <span>{lens.label}</span>
+              <small>{lens.status}</small>
+            </button>
+          {/each}
+        </div>
+      </div>
+
+      {#if graphError}
+        <p class="error-line">{graphError}</p>
+      {:else if activeGraphLens}
+        <div class="graph-meta">
+          {#each activeGraphLens.stats ?? [] as stat}
+            <div>
+              <span class="metric-label">{stat.label}</span>
+              <strong>{stat.value}</strong>
+            </div>
+          {/each}
+        </div>
+
+        {#if graphNodes.length > 0}
+          <div class="graph-layout">
+            <div class="graph-stage" aria-label={`${activeGraphLens.label} node graph`}>
+              <svg class="graph-links" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true">
+                {#each graphEdges as edge}
+                  <line x1={edge.x1} y1={edge.y1} x2={edge.x2} y2={edge.y2}></line>
+                {/each}
+              </svg>
+              {#each graphNodes as node}
+                <div class="graph-node {graphNodeClass(node)}" style={graphNodeStyle(node)} title={node.id}>
+                  <strong>{node.label}</strong>
+                  <span>{node.kind}</span>
+                  {#if node.detail}
+                    <small>{node.detail}</small>
+                  {/if}
+                </div>
+              {/each}
+            </div>
+
+            <div class="fact-list">
+              {#each activeGraphLens.facts ?? [] as fact}
+                <div class="fact-row">
+                  <span>{fact.subject}</span>
+                  <strong>{fact.predicate}</strong>
+                  <span>{fact.object}</span>
+                </div>
+              {:else}
+                <p class="quiet">{activeGraphLens.summary}</p>
+              {/each}
+            </div>
+          </div>
+        {:else}
+          <p class="quiet">{activeGraphLens.summary}</p>
+        {/if}
+      {:else}
+        <p class="quiet">Waiting for graph</p>
+      {/if}
     </section>
   </section>
 </main>

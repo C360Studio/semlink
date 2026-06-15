@@ -93,7 +93,7 @@ small,
 .dashboard {
   display: grid;
   grid-template-columns: 250px minmax(420px, 1fr) 320px;
-  grid-template-rows: minmax(420px, 1fr) minmax(210px, auto);
+  grid-template-rows: minmax(420px, 1fr) minmax(210px, auto) minmax(360px, auto);
   gap: 14px;
   max-width: 1480px;
   margin: 0 auto;
@@ -114,7 +114,7 @@ small,
 }
 
 .fleet {
-  grid-row: 1 / span 2;
+  grid-row: 1 / span 3;
 }
 
 .map-panel {
@@ -131,6 +131,11 @@ small,
 
 .alerts {
   grid-column: 3;
+}
+
+.graph-panel {
+  grid-column: 2 / span 2;
+  min-height: 360px;
 }
 
 .vehicle-list,
@@ -331,6 +336,195 @@ small,
   border-left: 3px solid #ff6f61;
 }
 
+.graph-title {
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.title-left {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 92px;
+}
+
+.source-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+.source-tabs button {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 34px;
+  max-width: 230px;
+  border: 1px solid rgba(238, 244, 240, 0.12);
+  border-radius: 6px;
+  background: #242827;
+  color: #eef4f0;
+  cursor: pointer;
+  font-weight: 680;
+}
+
+.source-tabs button.active {
+  border-color: #60c2d6;
+  background: #193038;
+}
+
+.source-tabs button span,
+.source-tabs button small {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.source-tabs button small {
+  color: #9eb6bd;
+  font-size: 0.7rem;
+  text-transform: uppercase;
+}
+
+.graph-meta {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.graph-meta div {
+  min-height: 46px;
+  border-radius: 6px;
+  background: #242827;
+  padding: 8px 10px;
+}
+
+.graph-meta strong {
+  display: block;
+  overflow-wrap: anywhere;
+}
+
+.graph-layout {
+  display: grid;
+  grid-template-columns: minmax(360px, 1.25fr) minmax(260px, 0.85fr);
+  gap: 14px;
+  align-items: stretch;
+}
+
+.graph-stage {
+  position: relative;
+  min-height: 270px;
+  border-radius: 6px;
+  overflow: hidden;
+  background:
+    linear-gradient(rgba(96, 194, 214, 0.07) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(96, 194, 214, 0.07) 1px, transparent 1px),
+    #202525;
+  background-size: 34px 34px, 34px 34px, 100% 100%;
+}
+
+.graph-links {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
+
+.graph-links line {
+  stroke: rgba(96, 194, 214, 0.42);
+  stroke-width: 0.38;
+  vector-effect: non-scaling-stroke;
+}
+
+.graph-node {
+  position: absolute;
+  display: grid;
+  grid-template-rows: auto auto auto;
+  gap: 2px;
+  width: 142px;
+  min-height: 58px;
+  transform: translate(-50%, -50%);
+  border: 1px solid rgba(238, 244, 240, 0.16);
+  border-radius: 6px;
+  background: #202928;
+  padding: 8px;
+  box-shadow: 0 10px 24px rgba(0, 0, 0, 0.28);
+}
+
+.graph-node strong,
+.graph-node span,
+.graph-node small {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.graph-node strong {
+  font-size: 0.82rem;
+}
+
+.graph-node span {
+  color: #aab8b0;
+  font-size: 0.72rem;
+  text-transform: uppercase;
+}
+
+.graph-node small {
+  color: #d7e1dc;
+}
+
+.graph-node.signal-node {
+  border-color: rgba(93, 211, 158, 0.42);
+}
+
+.graph-node.control-node {
+  border-color: rgba(96, 194, 214, 0.5);
+}
+
+.graph-node.warn-node {
+  border-color: rgba(255, 203, 107, 0.74);
+}
+
+.graph-node.danger-node {
+  border-color: rgba(255, 111, 97, 0.78);
+}
+
+.fact-list {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+  min-height: 270px;
+}
+
+.fact-row {
+  display: grid;
+  grid-template-columns: minmax(72px, 0.7fr) minmax(140px, 1.3fr) minmax(80px, 0.8fr);
+  gap: 8px;
+  align-items: center;
+  min-height: 34px;
+  border-bottom: 1px solid rgba(238, 244, 240, 0.08);
+  color: #d7e1dc;
+  font-size: 0.82rem;
+}
+
+.fact-row span,
+.fact-row strong {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.fact-row span:first-child {
+  color: #9eb6bd;
+}
+
+.fact-row strong {
+  color: #eef4f0;
+  font-weight: 650;
+}
+
 @media (max-width: 1050px) {
   .dashboard {
     grid-template-columns: 1fr;
@@ -341,7 +535,8 @@ small,
   .map-panel,
   .detail,
   .telemetry,
-  .alerts {
+  .alerts,
+  .graph-panel {
     grid-column: 1;
     grid-row: auto;
   }
@@ -349,6 +544,10 @@ small,
   .vehicle-list {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  }
+
+  .graph-layout {
+    grid-template-columns: 1fr;
   }
 }
 
@@ -365,7 +564,8 @@ small,
   .top-metrics,
   .commands,
   .readouts,
-  .metrics-grid {
+  .metrics-grid,
+  .graph-meta {
     grid-template-columns: 1fr;
   }
 
@@ -375,5 +575,33 @@ small,
 
   .alert-row {
     grid-template-columns: 1fr;
+  }
+
+  .graph-title {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .source-tabs {
+    justify-content: stretch;
+  }
+
+  .source-tabs button {
+    flex: 1 1 160px;
+  }
+
+  .graph-stage {
+    min-height: 330px;
+  }
+
+  .graph-node {
+    width: 124px;
+    min-height: 54px;
+  }
+
+  .fact-row {
+    grid-template-columns: 1fr;
+    gap: 2px;
+    padding-bottom: 7px;
   }
 }

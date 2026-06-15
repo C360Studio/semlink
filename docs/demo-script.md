@@ -32,9 +32,13 @@ stack.
 1. Show the fleet map and telemetry counters.
 2. Point to raw frames increasing faster than graph writes.
 3. Select `UAV-001` and wait for the low-battery alert.
-4. Wait for the final vehicle to enter its simulated link-loss window.
-5. Send `Return`, `Hold`, or `Land` and show the command intent revision.
-6. If `-csapi-url` is enabled, show that SemConnect receives the curated standards projection:
+4. Open the `Graph` panel on `SemLink Graph` and show the selected vehicle, signal-profiled telemetry facts,
+   control-profiled alert, graph revision, and indexing profile.
+5. Send `Return`, `Hold`, or `Land` and show the command intent node/fact appear in the SemLink graph lens.
+6. If `-csapi-url` is enabled, switch the graph panel to `SemConnect Projection` and show the corresponding
+   CS API System, Datastreams, Observation history, SystemEvent, ControlStream, and Command.
+7. Wait for the final vehicle to enter its simulated link-loss window.
+8. Use curl as backup evidence that SemConnect receives the curated standards projection:
 
 ```bash
 curl -s http://127.0.0.1:8081/systems
@@ -43,10 +47,10 @@ curl -s http://127.0.0.1:8081/systemEvents
 curl -s http://127.0.0.1:8081/commands
 ```
 
-7. Query SemStreams directly for the selected vehicle:
+9. Query the graph lens directly for the selected vehicle:
 
 ```bash
-curl -s http://127.0.0.1:8080/api/snapshot
+curl -s 'http://127.0.0.1:8080/api/graph?vehicle_id=c360.semlink.robotics.fleet.drone.uav-001'
 ```
 
 ## Claim

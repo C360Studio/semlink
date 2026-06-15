@@ -85,7 +85,7 @@ func main() {
 	commands := gcs.NewCommandService(rt.Graph, store)
 	server := &http.Server{
 		Addr:              *listen,
-		Handler:           gcs.NewServer(store, commands, *staticDir).Handler(),
+		Handler:           gcs.NewServer(store, commands, *staticDir, gcs.ServerOptions{Graph: rt.Graph, CSAPIURL: *csapiURL}).Handler(),
 		ReadHeaderTimeout: 5 * time.Second,
 	}
 

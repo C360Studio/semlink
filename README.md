@@ -59,6 +59,11 @@ Systems for UAVs, Datastreams for selected telemetry rollups, OMS
 Observations, SystemEvents for alerts, and Command metadata for operator
 intent. Raw MAVLink frames do not pass through CS API.
 
+The dashboard includes a source-aware graph lens for the selected vehicle:
+`SemLink Graph` shows the operational SemStreams state, while
+`SemConnect Projection` shows the downstream CS API materialization when
+`-csapi-url` is enabled.
+
 ## Roadmap
 
 PX4 SITL is the next source adapter. It should feed UDP MAVLink packets into the same decoder and projector used by

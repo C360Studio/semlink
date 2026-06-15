@@ -13,17 +13,38 @@ import (
 type Server struct {
 	store    *Store
 	commands *CommandService
+	graph    EntityQuerier
+	csapiURL string
+	client   *http.Client
 	static   string
 }
 
-func NewServer(store *Store, commands *CommandService, staticDir string) *Server {
-	return &Server{store: store, commands: commands, static: staticDir}
+type ServerOptions struct {
+	Graph      EntityQuerier
+	CSAPIURL   string
+	HTTPClient *http.Client
+}
+
+func NewServer(store *Store, commands *CommandService, staticDir string, opts ServerOptions) *Server {
+	client := opts.HTTPClient
+	if client == nil {
+		client = &http.Client{Timeout: 2 * time.Second}
+	}
+	return &Server{
+		store:    store,
+		commands: commands,
+		graph:    opts.Graph,
+		csapiURL: opts.CSAPIURL,
+		client:   client,
+		static:   staticDir,
+	}
 }
 
 func (s *Server) Handler() http.Handler {
 	mux := http.NewServeMux()
 	mux.HandleFunc("/api/health", s.handleHealth)
 	mux.HandleFunc("/api/snapshot", s.handleSnapshot)
+	mux.HandleFunc("/api/graph", s.handleGraph)
 	mux.HandleFunc("/api/events", s.handleEvents)
 	mux.HandleFunc("/api/commands", s.handleCommands)
 	mux.HandleFunc("/", s.handleStatic)
@@ -36,6 +57,20 @@ func (s *Server) handleHealth(w http.ResponseWriter, _ *http.Request) {
 
 func (s *Server) handleSnapshot(w http.ResponseWriter, _ *http.Request) {
 	writeJSON(w, s.store.Snapshot())
+}
+
+func (s *Server) handleGraph(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodGet {
+		http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+	vehicleID := r.URL.Query().Get("vehicle_id")
+	view, err := s.BuildGraphView(r.Context(), vehicleID)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+	writeJSON(w, view)
 }
 
 func (s *Server) handleEvents(w http.ResponseWriter, r *http.Request) {

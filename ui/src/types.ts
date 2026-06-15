@@ -65,3 +65,47 @@ export type Snapshot = {
   commands: Command[];
   metrics: Metrics;
 };
+
+export type GraphNode = {
+  id: string;
+  label: string;
+  kind: string;
+  profile?: string;
+  detail?: string;
+  status?: string;
+};
+
+export type GraphEdge = {
+  from: string;
+  to: string;
+  label: string;
+};
+
+export type GraphFact = {
+  subject: string;
+  predicate: string;
+  object: string;
+  source?: string;
+};
+
+export type GraphStat = {
+  label: string;
+  value: string;
+};
+
+export type GraphLens = {
+  source: 'semlink' | 'csapi' | string;
+  label: string;
+  status: string;
+  summary: string;
+  nodes: GraphNode[] | null;
+  edges: GraphEdge[] | null;
+  facts: GraphFact[] | null;
+  stats: GraphStat[] | null;
+};
+
+export type GraphView = {
+  generated_at: string;
+  vehicle_id: string;
+  lenses: GraphLens[];
+};
