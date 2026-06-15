@@ -9,7 +9,7 @@ need Docker Compose because it starts an embedded NATS JetStream server and the
 SemStreams graph-ingest component in-process:
 
 ```bash
-cd /Users/coby/Code/c360/semlink
+# Run from the semlink checkout.
 npm --prefix ui install
 npm --prefix ui run build
 go run ./cmd/semgcs-demo -embedded-nats=true -vehicles=12 -hz=20
@@ -23,10 +23,12 @@ CS API gateway and its own NATS/SemStreams backend; the override below only
 publishes `cs-api-server` to the host so SemLink can reach it:
 
 ```bash
-cd /Users/coby/Code/c360/semconnect
+# From the semlink checkout. Assumes semconnect is cloned beside semlink.
+DEMO_ROOT="$(cd .. && pwd)"
+cd "$DEMO_ROOT/semconnect"
 docker compose -p semconnect-semlink-demo \
   -f conformance/compose.yml \
-  -f /Users/coby/Code/c360/semlink/docs/semconnect-csapi-port.override.yml \
+  -f "$DEMO_ROOT/semlink/docs/semconnect-csapi-port.override.yml" \
   up -d --build --wait nats semstreams-backend cs-api-server
 
 curl -fsS http://127.0.0.1:48080/health
@@ -34,7 +36,7 @@ curl -fsS http://127.0.0.1:48080/health
 
 If that direct Compose command reports a missing `conformance/.vendor/semstreams`
 build context, stage SemConnect's pinned vendors by running its conformance
-harness once from `/Users/coby/Code/c360/semconnect`:
+harness once from the `semconnect` checkout:
 
 ```bash
 KEEP_STACK=0 ./conformance/run.sh
@@ -46,7 +48,7 @@ With SemConnect reachable on port `48080`, run SemLink with the standards
 projection enabled:
 
 ```bash
-cd /Users/coby/Code/c360/semlink
+cd "$DEMO_ROOT/semlink"
 go run ./cmd/semgcs-demo \
   -embedded-nats=true \
   -vehicles=12 \
@@ -57,10 +59,13 @@ go run ./cmd/semgcs-demo \
 Tear the SemConnect demo stack down when done:
 
 ```bash
-cd /Users/coby/Code/c360/semconnect
+# From the semlink checkout or any shell where DEMO_ROOT points at the parent
+# directory containing semlink and semconnect.
+DEMO_ROOT="${DEMO_ROOT:-$(cd .. && pwd)}"
+cd "$DEMO_ROOT/semconnect"
 docker compose -p semconnect-semlink-demo \
   -f conformance/compose.yml \
-  -f /Users/coby/Code/c360/semlink/docs/semconnect-csapi-port.override.yml \
+  -f "$DEMO_ROOT/semlink/docs/semconnect-csapi-port.override.yml" \
   down -v --remove-orphans
 ```
 

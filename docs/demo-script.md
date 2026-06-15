@@ -5,7 +5,7 @@
 SemLink-only:
 
 ```bash
-cd /Users/coby/Code/c360/semlink
+# Run from the semlink checkout.
 npm --prefix ui install
 npm --prefix ui run build
 go run ./cmd/semgcs-demo -embedded-nats=true -vehicles=12 -hz=20
@@ -16,10 +16,12 @@ Open `http://127.0.0.1:8080`.
 Full bridge demo:
 
 ```bash
-cd /Users/coby/Code/c360/semconnect
+# From the semlink checkout. Assumes semconnect is cloned beside semlink.
+DEMO_ROOT="$(cd .. && pwd)"
+cd "$DEMO_ROOT/semconnect"
 docker compose -p semconnect-semlink-demo \
   -f conformance/compose.yml \
-  -f /Users/coby/Code/c360/semlink/docs/semconnect-csapi-port.override.yml \
+  -f "$DEMO_ROOT/semlink/docs/semconnect-csapi-port.override.yml" \
   up -d --build --wait nats semstreams-backend cs-api-server
 
 curl -fsS http://127.0.0.1:48080/health
@@ -29,7 +31,6 @@ If `conformance/.vendor/semstreams` is missing, run the SemConnect conformance
 harness once to stage its pinned vendor trees:
 
 ```bash
-cd /Users/coby/Code/c360/semconnect
 KEEP_STACK=0 ./conformance/run.sh
 ```
 
@@ -38,7 +39,7 @@ Then rerun the shorter Compose command above.
 After SemConnect is healthy, enable the optional standards projection:
 
 ```bash
-cd /Users/coby/Code/c360/semlink
+cd "$DEMO_ROOT/semlink"
 npm --prefix ui run build
 go run ./cmd/semgcs-demo \
   -embedded-nats=true \
@@ -87,10 +88,13 @@ curl -s 'http://127.0.0.1:8080/api/graph?vehicle_id=c360.semlink.robotics.fleet.
 ## Teardown
 
 ```bash
-cd /Users/coby/Code/c360/semconnect
+# From the semlink checkout or any shell where DEMO_ROOT points at the parent
+# directory containing semlink and semconnect.
+DEMO_ROOT="${DEMO_ROOT:-$(cd .. && pwd)}"
+cd "$DEMO_ROOT/semconnect"
 docker compose -p semconnect-semlink-demo \
   -f conformance/compose.yml \
-  -f /Users/coby/Code/c360/semlink/docs/semconnect-csapi-port.override.yml \
+  -f "$DEMO_ROOT/semlink/docs/semconnect-csapi-port.override.yml" \
   down -v --remove-orphans
 ```
 
