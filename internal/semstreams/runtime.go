@@ -149,7 +149,7 @@ func startEmbeddedNATS() (*natsserver.Server, string, error) {
 	opts := &natsserver.Options{
 		ServerName:         "semlink-embedded",
 		Host:               "127.0.0.1",
-		Port:               18222,
+		Port:               -1,
 		HTTPPort:           0,
 		NoLog:              true,
 		NoSigs:             true,
