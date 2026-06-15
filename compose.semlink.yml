@@ -1,0 +1,51 @@
+services:
+  semlink-nats:
+    image: nats:2.10-alpine
+    command:
+      - "-c"
+      - "/etc/nats/nats.conf"
+    volumes:
+      - semlink-nats-data:/data
+      - ${SEMLINK_ROOT:-.}/configs/compose/semlink-nats.conf:/etc/nats/nats.conf:ro
+    ports:
+      - "${SEMLINK_NATS_HOST_PORT:-14224}:4222"
+      - "${SEMLINK_NATS_MON_HOST_PORT:-18224}:8222"
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q -O - http://localhost:8222/healthz || exit 1"]
+      interval: 5s
+      timeout: 3s
+      retries: 12
+      start_period: 5s
+
+  semlink:
+    build:
+      context: ${SEMLINK_ROOT:-.}
+      dockerfile: Dockerfile
+      additional_contexts:
+        semstreams: ${SEMSTREAMS_ROOT:-../semstreams}
+    depends_on:
+      semlink-nats:
+        condition: service_healthy
+      cs-api-server:
+        condition: service_started
+    command:
+      - "-embedded-nats=false"
+      - "-nats-url=nats://semlink-nats:4222"
+      - "-static=/app/ui/dist"
+      - "-listen=:8080"
+      - "-vehicles=${SEMLINK_VEHICLES:-12}"
+      - "-hz=${SEMLINK_HZ:-20}"
+      - "-csapi-url=http://cs-api-server:8080"
+      - "-csapi-interval=${SEMLINK_CSAPI_INTERVAL:-2s}"
+      - "-csapi-observation-interval=${SEMLINK_CSAPI_OBSERVATION_INTERVAL:-5s}"
+    ports:
+      - "${SEMLINK_UI_HOST_PORT:-8080}:8080"
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q -O - http://localhost:8080/api/health || exit 1"]
+      interval: 5s
+      timeout: 3s
+      retries: 12
+      start_period: 5s
+
+volumes:
+  semlink-nats-data:

@@ -4,77 +4,71 @@ SemLink is a SemStreams-consuming ground-control demo. It owns MAVLink decoding,
 operator UX, and robotics language. SemStreams owns the semantic substrate: NATS/JetStream, graph-ingest,
 `ENTITY_STATES`, mutation/query subjects, projection contracts, and indexing-profile policy.
 
-The first runnable target is `cmd/semgcs-demo`. The SemLink-only demo does not
-need Docker Compose because it starts an embedded NATS JetStream server and the
-SemStreams graph-ingest component in-process:
+## Run The Demo
+
+The full demo uses Docker Compose and keeps two NATS/SemStreams stacks:
+
+- SemLink stack: raw MAVLink stream, current-state graph, alerts, command intent, and operator UI.
+- SemConnect stack: CS API Systems, Datastreams, Observations, SystemEvents, and Commands.
+- HTTP bridge: curated, decimated standards projection from SemLink into SemConnect.
+
+For now, SemLink layers its services on top of SemConnect's conformance Compose
+file and builds against a sibling SemStreams checkout. Clone `semconnect` and
+`semstreams` beside `semlink`, then run from the `semlink` checkout:
 
 ```bash
-# Run from the semlink checkout.
+./scripts/demo-up.sh
+```
+
+Then open:
+
+- SemLink UI: `http://127.0.0.1:8080`
+- SemConnect CS API: `http://127.0.0.1:48080`
+
+If the script reports a missing SemConnect pinned vendor tree, stage it once:
+
+```bash
+cd ../semconnect
+KEEP_STACK=0 ./conformance/run.sh
+cd ../semlink
+./scripts/demo-up.sh
+```
+
+If your sibling checkouts live somewhere else, set `SEMCONNECT_ROOT` and
+`SEMSTREAMS_ROOT` before running the script.
+
+Tear the stack down with:
+
+```bash
+./scripts/demo-down.sh
+```
+
+The helper scripts set safe default host ports:
+
+- `SEMLINK_UI_HOST_PORT=8080`
+- `CS_API_HOST_PORT=48080`
+- `NATS_HOST_PORT=14222` for SemConnect NATS debug access
+- `SEMLINK_NATS_HOST_PORT=14224` for SemLink NATS debug access
+
+For the first demo, keep SemLink and SemConnect on separate NATS/SemStreams
+stacks and connect them only through the CS API HTTP bridge. That makes the
+boundary obvious: SemLink owns MAVLink, operator state, raw telemetry streams,
+and command intent; SemConnect owns the standards-facing CS API view.
+
+## Developer Mode
+
+For quick SemLink-only work, run without Docker Compose. This starts embedded
+NATS JetStream and the SemStreams graph-ingest component in-process:
+
+```bash
 npm --prefix ui install
 npm --prefix ui run build
 go run ./cmd/semgcs-demo -embedded-nats=true -vehicles=12 -hz=20
 ```
 
-Then open `http://127.0.0.1:8080`.
-
-For the full bridge demo, use Docker Compose for the SemConnect side and keep
-SemLink as a local process. SemConnect's conformance Compose stack owns the
-CS API gateway and its own NATS/SemStreams backend; the override below only
-publishes `cs-api-server` to the host so SemLink can reach it:
-
-```bash
-# From the semlink checkout. Assumes semconnect is cloned beside semlink.
-DEMO_ROOT="$(cd .. && pwd)"
-cd "$DEMO_ROOT/semconnect"
-docker compose -p semconnect-semlink-demo \
-  -f conformance/compose.yml \
-  -f "$DEMO_ROOT/semlink/docs/semconnect-csapi-port.override.yml" \
-  up -d --build --wait nats semstreams-backend cs-api-server
-
-curl -fsS http://127.0.0.1:48080/health
-```
-
-If that direct Compose command reports a missing `conformance/.vendor/semstreams`
-build context, stage SemConnect's pinned vendors by running its conformance
-harness once from the `semconnect` checkout:
-
-```bash
-KEEP_STACK=0 ./conformance/run.sh
-```
-
-Then rerun the shorter Compose command above.
-
-With SemConnect reachable on port `48080`, run SemLink with the standards
-projection enabled:
-
-```bash
-cd "$DEMO_ROOT/semlink"
-go run ./cmd/semgcs-demo \
-  -embedded-nats=true \
-  -vehicles=12 \
-  -hz=20 \
-  -csapi-url=http://127.0.0.1:48080
-```
-
-Tear the SemConnect demo stack down when done:
-
-```bash
-# From the semlink checkout or any shell where DEMO_ROOT points at the parent
-# directory containing semlink and semconnect.
-DEMO_ROOT="${DEMO_ROOT:-$(cd .. && pwd)}"
-cd "$DEMO_ROOT/semconnect"
-docker compose -p semconnect-semlink-demo \
-  -f conformance/compose.yml \
-  -f "$DEMO_ROOT/semlink/docs/semconnect-csapi-port.override.yml" \
-  down -v --remove-orphans
-```
-
-For the first demo, keep SemLink and SemConnect on separate NATS/SemStreams
-stacks and connect them only through the CS API HTTP bridge. That makes the
-boundary obvious: SemLink owns MAVLink, operator state, raw telemetry streams,
-and command intent; SemConnect owns the standards-facing CS API view. A shared
-NATS topology is a later integration mode and should run one deliberate owner
-for each SemStreams graph processor.
+Then open `http://127.0.0.1:8080`. A shared NATS topology is a later
+integration mode and should run one deliberate owner for each SemStreams graph
+processor.
 
 The demo uses a simulated MAVLink-like feed, but the frames are real unsigned MAVLink 2 envelopes for the subset we
 support now: `HEARTBEAT`, `SYS_STATUS`, and `GLOBAL_POSITION_INT`. It does not use MAVSDK.

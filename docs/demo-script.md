@@ -2,55 +2,34 @@
 
 ## Run
 
-SemLink-only:
+Run from the `semlink` checkout with `semconnect` and `semstreams` cloned
+beside it:
 
 ```bash
-# Run from the semlink checkout.
-npm --prefix ui install
-npm --prefix ui run build
-go run ./cmd/semgcs-demo -embedded-nats=true -vehicles=12 -hz=20
+./scripts/demo-up.sh
 ```
+
+If the sibling checkouts live elsewhere, set `SEMCONNECT_ROOT` and
+`SEMSTREAMS_ROOT` before running the script.
 
 Open `http://127.0.0.1:8080`.
 
-Full bridge demo:
+If SemConnect's pinned semstreams vendor tree is missing, stage it once:
 
 ```bash
-# From the semlink checkout. Assumes semconnect is cloned beside semlink.
-DEMO_ROOT="$(cd .. && pwd)"
-cd "$DEMO_ROOT/semconnect"
-docker compose -p semconnect-semlink-demo \
-  -f conformance/compose.yml \
-  -f "$DEMO_ROOT/semlink/docs/semconnect-csapi-port.override.yml" \
-  up -d --build --wait nats semstreams-backend cs-api-server
-
-curl -fsS http://127.0.0.1:48080/health
-```
-
-If `conformance/.vendor/semstreams` is missing, run the SemConnect conformance
-harness once to stage its pinned vendor trees:
-
-```bash
+cd ../semconnect
 KEEP_STACK=0 ./conformance/run.sh
+cd ../semlink
+./scripts/demo-up.sh
 ```
 
-Then rerun the shorter Compose command above.
+Use `./scripts/demo-down.sh` to tear down the stack.
 
-After SemConnect is healthy, enable the optional standards projection:
-
-```bash
-cd "$DEMO_ROOT/semlink"
-npm --prefix ui run build
-go run ./cmd/semgcs-demo \
-  -embedded-nats=true \
-  -vehicles=12 \
-  -hz=20 \
-  -csapi-url=http://127.0.0.1:48080
-```
+## Topology
 
 Use two NATS/SemStreams stacks for this first bridge demo:
 
-- SemLink embedded NATS/SemStreams: operator UI, raw MAVLink stream, current-state graph, alerts, commands.
+- SemLink NATS/SemStreams stack: operator UI, raw MAVLink stream, current-state graph, alerts, commands.
 - SemConnect NATS/SemStreams stack: CS API Systems, Datastreams, Observations, SystemEvents, Commands.
 - HTTP bridge: decimated standards projection from SemLink into SemConnect.
 
@@ -88,14 +67,7 @@ curl -s 'http://127.0.0.1:8080/api/graph?vehicle_id=c360.semlink.robotics.fleet.
 ## Teardown
 
 ```bash
-# From the semlink checkout or any shell where DEMO_ROOT points at the parent
-# directory containing semlink and semconnect.
-DEMO_ROOT="${DEMO_ROOT:-$(cd .. && pwd)}"
-cd "$DEMO_ROOT/semconnect"
-docker compose -p semconnect-semlink-demo \
-  -f conformance/compose.yml \
-  -f "$DEMO_ROOT/semlink/docs/semconnect-csapi-port.override.yml" \
-  down -v --remove-orphans
+./scripts/demo-down.sh
 ```
 
 ## Claim

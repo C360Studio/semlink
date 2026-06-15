@@ -1,0 +1,10 @@
+.git
+.cache
+.DS_Store
+Dockerfile
+ui/node_modules
+ui/dist
+**/node_modules
+**/.svelte-kit
+**/coverage
+tmp
