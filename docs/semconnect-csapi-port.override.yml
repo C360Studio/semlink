@@ -1,0 +1,4 @@
+services:
+  cs-api-server:
+    ports:
+      - "${CS_API_HOST_PORT:-48080}:8080"

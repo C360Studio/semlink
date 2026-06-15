@@ -4,7 +4,9 @@ SemLink is a SemStreams-consuming ground-control demo. It owns MAVLink decoding,
 operator UX, and robotics language. SemStreams owns the semantic substrate: NATS/JetStream, graph-ingest,
 `ENTITY_STATES`, mutation/query subjects, projection contracts, and indexing-profile policy.
 
-The first runnable target is `cmd/semgcs-demo`:
+The first runnable target is `cmd/semgcs-demo`. The SemLink-only demo does not
+need Docker Compose because it starts an embedded NATS JetStream server and the
+SemStreams graph-ingest component in-process:
 
 ```bash
 cd /Users/coby/Code/c360/semlink
@@ -15,15 +17,51 @@ go run ./cmd/semgcs-demo -embedded-nats=true -vehicles=12 -hz=20
 
 Then open `http://127.0.0.1:8080`.
 
-If a SemConnect CS API server is running, add a standards projection without
-moving MAVLink handling out of SemLink:
+For the full bridge demo, use Docker Compose for the SemConnect side and keep
+SemLink as a local process. SemConnect's conformance Compose stack owns the
+CS API gateway and its own NATS/SemStreams backend; the override below only
+publishes `cs-api-server` to the host so SemLink can reach it:
 
 ```bash
+cd /Users/coby/Code/c360/semconnect
+docker compose -p semconnect-semlink-demo \
+  -f conformance/compose.yml \
+  -f /Users/coby/Code/c360/semlink/docs/semconnect-csapi-port.override.yml \
+  up -d --build --wait nats semstreams-backend cs-api-server
+
+curl -fsS http://127.0.0.1:48080/health
+```
+
+If that direct Compose command reports a missing `conformance/.vendor/semstreams`
+build context, stage SemConnect's pinned vendors by running its conformance
+harness once from `/Users/coby/Code/c360/semconnect`:
+
+```bash
+KEEP_STACK=0 ./conformance/run.sh
+```
+
+Then rerun the shorter Compose command above.
+
+With SemConnect reachable on port `48080`, run SemLink with the standards
+projection enabled:
+
+```bash
+cd /Users/coby/Code/c360/semlink
 go run ./cmd/semgcs-demo \
   -embedded-nats=true \
   -vehicles=12 \
   -hz=20 \
-  -csapi-url=http://127.0.0.1:8081
+  -csapi-url=http://127.0.0.1:48080
+```
+
+Tear the SemConnect demo stack down when done:
+
+```bash
+cd /Users/coby/Code/c360/semconnect
+docker compose -p semconnect-semlink-demo \
+  -f conformance/compose.yml \
+  -f /Users/coby/Code/c360/semlink/docs/semconnect-csapi-port.override.yml \
+  down -v --remove-orphans
 ```
 
 For the first demo, keep SemLink and SemConnect on separate NATS/SemStreams
