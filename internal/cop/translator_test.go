@@ -84,17 +84,21 @@ func TestTranslatorProjectsOperatorMarkerAndMessage(t *testing.T) {
 	}
 
 	message, ok, err := tr.Apply(cot.Event{
-		UID:      "chat-1",
-		Type:     cot.TypeGeoChat,
-		Time:     now,
-		Callsign: "ALPHA",
-		ChatText: "hold at checkpoint",
+		UID:       "chat-1",
+		Type:      cot.TypeGeoChat,
+		Time:      now,
+		Callsign:  "ALPHA",
+		SenderUID: "ANDROID-1",
+		ChatText:  "hold at checkpoint",
 	}, now)
 	if err != nil || !ok {
 		t.Fatalf("message Apply ok=%t err=%v", ok, err)
 	}
 	if message.Projection.IndexingProfile != vocabulary.IndexingProfileContent || message.View.Text != "hold at checkpoint" {
 		t.Fatalf("message result = %#v", message)
+	}
+	if message.View.SenderUID != "ANDROID-1" || message.View.SenderEntity != operator.View.EntityID {
+		t.Fatalf("message sender = %q/%q, want %q/%q", message.View.SenderUID, message.View.SenderEntity, "ANDROID-1", operator.View.EntityID)
 	}
 }
 

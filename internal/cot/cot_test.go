@@ -41,12 +41,12 @@ func TestMarshalAndUnmarshalTrack(t *testing.T) {
 }
 
 func TestUnmarshalGeoChatUsesRemarksAsText(t *testing.T) {
-	raw := []byte(`<event version="2.0" uid="chat-1" type="b-t-f" how="h-g-i-g-o" time="2026-06-16T12:30:00Z"><detail><contact callsign="ALPHA"/><remarks>hold at checkpoint</remarks></detail></event>`)
+	raw := []byte(`<event version="2.0" uid="chat-1" type="b-t-f" how="h-g-i-g-o" time="2026-06-16T12:30:00Z"><detail><contact callsign="ALPHA"/><remarks>hold at checkpoint</remarks><__chat senderUid="ANDROID-ALPHA"/></detail></event>`)
 	got, err := Unmarshal(raw)
 	if err != nil {
 		t.Fatalf("Unmarshal: %v", err)
 	}
-	if got.Callsign != "ALPHA" || got.ChatText != "hold at checkpoint" {
+	if got.Callsign != "ALPHA" || got.ChatText != "hold at checkpoint" || got.SenderUID != "ANDROID-ALPHA" {
 		t.Fatalf("decoded geochat = %#v", got)
 	}
 }

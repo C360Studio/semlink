@@ -34,6 +34,7 @@ type Event struct {
 	Stale     time.Time
 	Point     *Point
 	Callsign  string
+	SenderUID string
 	CourseDeg float64
 	SpeedMPS  float64
 	HasTrack  bool
@@ -100,7 +101,7 @@ func Marshal(e Event) ([]byte, error) {
 		detail.Remarks = e.Remarks
 	}
 	if e.ChatText != "" {
-		detail.Chat = &xmlChat{Message: e.ChatText}
+		detail.Chat = &xmlChat{Message: e.ChatText, SenderUID: e.SenderUID}
 		if detail.Remarks == "" {
 			detail.Remarks = e.ChatText
 		}
@@ -161,6 +162,7 @@ func Unmarshal(data []byte) (Event, error) {
 		out.Remarks = strings.TrimSpace(in.Detail.Remarks)
 		if in.Detail.Chat != nil {
 			out.ChatText = strings.TrimSpace(firstNonEmpty(in.Detail.Chat.Message, in.Detail.Chat.Text))
+			out.SenderUID = strings.TrimSpace(firstNonEmpty(in.Detail.Chat.SenderUID, in.Detail.Chat.SenderUIDSnake))
 		}
 		if out.ChatText == "" && IsGeoChatType(out.Type) {
 			out.ChatText = out.Remarks
@@ -265,6 +267,8 @@ type xmlTrack struct {
 }
 
 type xmlChat struct {
-	Message string `xml:"message,attr,omitempty"`
-	Text    string `xml:",chardata"`
+	Message        string `xml:"message,attr,omitempty"`
+	SenderUID      string `xml:"senderUid,attr,omitempty"`
+	SenderUIDSnake string `xml:"sender_uid,attr,omitempty"`
+	Text           string `xml:",chardata"`
 }

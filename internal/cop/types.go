@@ -185,9 +185,13 @@ func (p *MessagePayload) Triples() []message.Triple {
 		triple(p.ID, PredicateKind, string(KindMessage), SourceCOP, now, 1),
 		triple(p.ID, PredicateCallsign, p.Callsign, SourceCoT, now, 0.8),
 		triple(p.ID, PredicateMessageText, p.Text, SourceCoT, now, 1),
-		triple(p.ID, PredicateMessageSenderUID, p.SenderUID, SourceCoT, now, 0.9),
-		triple(p.ID, PredicateMessageSenderEntity, p.SenderEntity, SourceCOP, now, 0.9),
 		triple(p.ID, PredicateLastSeenUnixMS, now.UnixMilli(), SourceCOP, now, 1),
+	}
+	if p.SenderUID != "" {
+		triples = append(triples, triple(p.ID, PredicateMessageSenderUID, p.SenderUID, SourceCoT, now, 0.9))
+	}
+	if p.SenderEntity != "" {
+		triples = append(triples, triple(p.ID, PredicateMessageSenderEntity, p.SenderEntity, SourceCOP, now, 0.9))
 	}
 	if p.HasPosition {
 		triples = append(triples,

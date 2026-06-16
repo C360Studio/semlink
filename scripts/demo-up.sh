@@ -25,6 +25,21 @@ is_falsey() {
     esac
 }
 
+send_udp_cot() {
+    local payload="$1"
+    printf '%s' "$payload" | nc -u -w1 127.0.0.1 "$SEMLINK_TAK_INBOUND_UDP_HOST_PORT"
+}
+
+seed_tak_samples() {
+    local now
+    now="$(date -u +"%Y-%m-%dT%H:%M:%SZ")"
+    send_udp_cot '<event version="2.0" uid="ANDROID-ALPHA" type="a-f-G-U-C" how="m-g" time="'"$now"'"><point lat="38.8920" lon="-77.0350" hae="24" ce="5" le="5"/><detail><contact callsign="ALPHA"/></detail></event>'
+    send_udp_cot '<event version="2.0" uid="ANDROID-BRAVO" type="a-f-G-U-C" how="m-g" time="'"$now"'"><point lat="38.8910" lon="-77.0410" hae="22" ce="5" le="5"/><detail><contact callsign="BRAVO"/></detail></event>'
+    send_udp_cot '<event version="2.0" uid="MARKER-NORTH-GATE" type="u-d-p" how="m-g" time="'"$now"'"><point lat="38.8940" lon="-77.0380" hae="0" ce="5" le="5"/><detail><contact callsign="North Gate"/><remarks>checkpoint</remarks></detail></event>'
+    send_udp_cot '<event version="2.0" uid="CHAT-ALPHA-1" type="b-t-f" how="h-g-i-g-o" time="'"$now"'"><point lat="38.8920" lon="-77.0350" hae="24" ce="5" le="5"/><detail><contact callsign="ALPHA"/><remarks>hold at checkpoint</remarks><__chat senderUid="ANDROID-ALPHA" message="hold at checkpoint"/></detail></event>'
+    send_udp_cot '<event version="2.0" uid="CHAT-BRAVO-1" type="b-t-f" how="h-g-i-g-o" time="'"$now"'"><point lat="38.8910" lon="-77.0410" hae="22" ce="5" le="5"/><detail><contact callsign="BRAVO"/><remarks>copy, holding west approach</remarks><__chat senderUid="ANDROID-BRAVO" message="copy, holding west approach"/></detail></event>'
+}
+
 if [[ ! -f "$SEMCONNECT_ROOT/conformance/compose.yml" ]]; then
     echo "missing SemConnect conformance compose: $SEMCONNECT_ROOT/conformance/compose.yml" >&2
     echo "clone semconnect beside semlink, or set SEMCONNECT_ROOT=/path/to/semconnect" >&2
@@ -55,9 +70,10 @@ export SEMLINK_NATS_MON_HOST_PORT="${SEMLINK_NATS_MON_HOST_PORT:-18224}"
 export SEMLINK_TAK_ENABLED="${SEMLINK_TAK_ENABLED:-false}"
 export SEMLINK_TAK_MULTICAST_ADDR="${SEMLINK_TAK_MULTICAST_ADDR:-239.2.3.1:6969}"
 export SEMLINK_TAK_TCP_LISTEN="${SEMLINK_TAK_TCP_LISTEN:-}"
-export SEMLINK_TAK_INBOUND_UDP_LISTEN="${SEMLINK_TAK_INBOUND_UDP_LISTEN:-}"
+export SEMLINK_TAK_INBOUND_UDP_LISTEN="${SEMLINK_TAK_INBOUND_UDP_LISTEN-:6970}"
 export SEMLINK_TAK_INBOUND_TCP_LISTEN="${SEMLINK_TAK_INBOUND_TCP_LISTEN:-}"
 export SEMLINK_TAK_INTERVAL="${SEMLINK_TAK_INTERVAL:-1s}"
+export SEMLINK_TAK_SEED="${SEMLINK_TAK_SEED:-true}"
 
 compose_files=(
     -f "$SEMCONNECT_ROOT/conformance/compose.yml"
@@ -120,4 +136,15 @@ if [[ -n "${SEMLINK_TAK_INBOUND_UDP_HOST_PORT:-}" ]]; then
 fi
 if [[ -n "${SEMLINK_TAK_INBOUND_TCP_HOST_PORT:-}" ]]; then
     echo "TAK inbound TCP: 127.0.0.1:${SEMLINK_TAK_INBOUND_TCP_HOST_PORT}"
+fi
+if [[ -n "${SEMLINK_TAK_INBOUND_UDP_HOST_PORT:-}" ]] && ! is_falsey "$SEMLINK_TAK_SEED"; then
+    if command -v nc >/dev/null 2>&1; then
+        if seed_tak_samples; then
+            echo "TAK sample dots seeded: ALPHA/BRAVO operators, North Gate marker, observed GeoChat"
+        else
+            echo "warning: failed to seed TAK sample dots on UDP ${SEMLINK_TAK_INBOUND_UDP_HOST_PORT}" >&2
+        fi
+    else
+        echo "warning: nc not found; skip TAK sample dot seeding" >&2
+    fi
 fi

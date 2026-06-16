@@ -593,7 +593,7 @@ func (b *Bridge) postJSON(ctx context.Context, path, contentType string, body an
 		return postResult{}, err
 	}
 	defer resp.Body.Close()
-	out, err := decodePostResult(resp)
+	out, err := decodePostResult(resp, path, body)
 	if err != nil {
 		raw, _ := io.ReadAll(io.LimitReader(resp.Body, 4096))
 		return postResult{}, fmt.Errorf("csapi bridge POST %s: %w: %s", path, err, strings.TrimSpace(string(raw)))
@@ -601,7 +601,7 @@ func (b *Bridge) postJSON(ctx context.Context, path, contentType string, body an
 	return out, nil
 }
 
-func decodePostResult(resp *http.Response) (postResult, error) {
+func decodePostResult(resp *http.Response, path string, requestBody any) (postResult, error) {
 	if resp.StatusCode != http.StatusCreated && resp.StatusCode != http.StatusConflict {
 		return postResult{}, fmt.Errorf("unexpected status %d", resp.StatusCode)
 	}
@@ -619,9 +619,35 @@ func decodePostResult(resp *http.Response) (postResult, error) {
 		id = resp.Header.Get("X-CS-Attempted-ID")
 	}
 	if resp.StatusCode == http.StatusConflict && id == "" {
+		id = attemptedIDFromRequest(path, requestBody)
+	}
+	if resp.StatusCode == http.StatusConflict && id == "" {
 		return postResult{}, errors.New("conflict without resource id")
 	}
 	return postResult{ID: id}, nil
+}
+
+func attemptedIDFromRequest(path string, body any) string {
+	item, ok := body.(map[string]any)
+	if !ok {
+		return ""
+	}
+	if id, _ := item["id"].(string); id != "" {
+		return id
+	}
+	props, _ := item["properties"].(map[string]any)
+	uid, _ := props["uid"].(string)
+	if uid == "" {
+		return ""
+	}
+	switch path {
+	case "/systems":
+		return "c360.semconnect.systems.csapi.system." + uid
+	case "/samplingFeatures":
+		return "c360.semconnect.systems.csapi.samplingfeature." + uid
+	default:
+		return ""
+	}
 }
 
 func idFromLocation(loc string) string {

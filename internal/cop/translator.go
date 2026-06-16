@@ -104,8 +104,11 @@ func messagePayload(event cot.Event, seen time.Time) (*MessagePayload, error) {
 	if err != nil {
 		return nil, err
 	}
-	senderUID := event.UID
-	senderEntity, _ := EntityID(KindOperator, senderUID)
+	senderUID := strings.TrimSpace(event.SenderUID)
+	senderEntity := ""
+	if senderUID != "" {
+		senderEntity, _ = EntityID(KindOperator, senderUID)
+	}
 	payload := &MessagePayload{
 		ID:           id,
 		UID:          event.UID,

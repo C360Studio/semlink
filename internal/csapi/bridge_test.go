@@ -256,11 +256,27 @@ func TestDecodePostResultAcceptsConflictAttemptedID(t *testing.T) {
 		Header:     http.Header{"X-Cs-Attempted-Id": []string{"c360.semconnect.systems.csapi.system.uav-001"}},
 		Body:       http.NoBody,
 	}
-	result, err := decodePostResult(resp)
+	result, err := decodePostResult(resp, "", nil)
 	if err != nil {
 		t.Fatalf("decodePostResult: %v", err)
 	}
 	if result.ID != "c360.semconnect.systems.csapi.system.uav-001" {
+		t.Fatalf("ID = %q", result.ID)
+	}
+}
+
+func TestDecodePostResultInfersConflictIDFromRequestBody(t *testing.T) {
+	resp := &http.Response{
+		StatusCode: http.StatusConflict,
+		Body:       http.NoBody,
+	}
+	result, err := decodePostResult(resp, "/systems", map[string]any{
+		"properties": map[string]any{"uid": "ANDROID-ALPHA"},
+	})
+	if err != nil {
+		t.Fatalf("decodePostResult: %v", err)
+	}
+	if result.ID != "c360.semconnect.systems.csapi.system.ANDROID-ALPHA" {
 		t.Fatalf("ID = %q", result.ID)
 	}
 }

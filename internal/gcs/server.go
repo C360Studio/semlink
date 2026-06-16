@@ -64,8 +64,11 @@ func (s *Server) handleGraph(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
 		return
 	}
-	vehicleID := r.URL.Query().Get("vehicle_id")
-	view, err := s.BuildGraphView(r.Context(), vehicleID)
+	entityID := r.URL.Query().Get("entity_id")
+	if entityID == "" {
+		entityID = r.URL.Query().Get("vehicle_id")
+	}
+	view, err := s.BuildGraphView(r.Context(), entityID)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return

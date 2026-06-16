@@ -132,6 +132,9 @@ export type GraphLens = {
 
 export type GraphView = {
   generated_at: string;
-  vehicle_id: string;
+  entity_id: string;
+  entity_kind: string;
+  entity_label: string;
+  vehicle_id?: string;
   lenses: GraphLens[];
 };

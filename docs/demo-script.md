@@ -14,15 +14,15 @@ If the sibling checkouts live elsewhere, set `SEMCONNECT_ROOT` and
 
 Open `http://127.0.0.1:8080`.
 
-To include TAK / CoT in the full Compose start path, enable the bridge with
-environment variables before invoking the script:
+The full Compose start path opens inbound TAK UDP on `:6970` by default and
+seeds sample CoT events for two operators, one marker, and observed GeoChat:
 
 ```bash
-SEMLINK_TAK_ENABLED=true \
-SEMLINK_TAK_INBOUND_UDP_LISTEN=:6970 \
 ./scripts/demo-up.sh
 ```
 
+Use `SEMLINK_TAK_SEED=false` to skip the sample dots, or set
+`SEMLINK_TAK_INBOUND_UDP_LISTEN=` to disable the default inbound UDP listener.
 Use `SEMLINK_TAK_TCP_LISTEN=:6969` for outbound TCP streaming and
 `SEMLINK_TAK_INBOUND_TCP_LISTEN=:6971` for inbound TCP CoT. The start script
 publishes host ports only for TAK listen addresses that are set.
@@ -59,11 +59,13 @@ stack.
 4. Open the `Graph` panel on `SemLink Graph` and show the selected vehicle, signal-profiled telemetry facts,
    control-profiled alert, graph revision, and indexing profile.
 5. Send `Return`, `Hold`, or `Land` and show the command intent node/fact appear in the SemLink graph lens.
-6. If TAK inbound is enabled, send or replay operator, marker, or GeoChat CoT and show the COP dots on the map.
-7. If `-csapi-url` is enabled, switch the graph panel to `SemConnect Projection` and show the corresponding
-   CS API System, Datastreams, Observation history, SystemEvent, ControlStream, and Command.
-8. Wait for the final vehicle to enter its simulated link-loss window.
-9. Use curl as backup evidence that SemConnect receives the curated standards projection:
+6. Select the TAK COP rows in the left sidebar and show that the map dots open the same SemStreams graph evidence.
+7. Switch TAK COP graph views to `SemConnect Projection` and show the corresponding CS API System,
+   Datastream, SamplingFeature, or GeoChat SystemEvent materialization.
+8. If `-csapi-url` is enabled for a vehicle, switch the graph panel to `SemConnect Projection` and show the
+   corresponding CS API System, Datastreams, Observation history, SystemEvent, ControlStream, and Command.
+9. Wait for the final vehicle to enter its simulated link-loss window.
+10. Use curl as backup evidence that SemConnect receives the curated standards projection:
 
 ```bash
 curl -s http://127.0.0.1:48080/systems
