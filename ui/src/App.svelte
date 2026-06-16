@@ -12,7 +12,7 @@
     Send,
     ShieldCheck
   } from '@lucide/svelte';
-  import type { Alert, GraphEdge, GraphNode, GraphView, Snapshot, Vehicle } from './types';
+  import type { Alert, COPView, GraphEdge, GraphNode, GraphView, Snapshot, Vehicle } from './types';
 
   let snapshot = $state<Snapshot | null>(null);
   let selectedID = $state<string>('');
@@ -25,10 +25,19 @@
   let lastGraphVehicleID = $state('');
 
   const vehicles = $derived(snapshot?.vehicles ?? []);
+  const operators = $derived(snapshot?.operators ?? []);
+  const markers = $derived(snapshot?.markers ?? []);
+  const messages = $derived((snapshot?.messages ?? []).filter((message) => message.has_position));
   const alerts = $derived((snapshot?.alerts ?? []).filter((alert) => alert.active).slice(0, 8));
   const selected = $derived(vehicles.find((vehicle) => vehicle.entity_id === selectedID) ?? vehicles[0]);
   const metrics = $derived(snapshot?.metrics);
-  const bounds = $derived(makeBounds(vehicles));
+  const mapPoints = $derived([
+    ...vehicles.map((vehicle) => ({ latitude_deg: vehicle.latitude_deg, longitude_deg: vehicle.longitude_deg })),
+    ...operators.filter((item) => item.has_position),
+    ...markers.filter((item) => item.has_position),
+    ...messages
+  ]);
+  const bounds = $derived(makeBounds(mapPoints));
   const graphLenses = $derived(graphView?.lenses ?? []);
   const activeGraphLens = $derived(graphLenses.find((lens) => lens.source === graphSource) ?? graphLenses[0]);
   const graphNodes = $derived(layoutGraph(activeGraphLens?.nodes ?? []));
@@ -153,12 +162,17 @@
     return 'signal-node';
   }
 
-  function makeBounds(items: Vehicle[]) {
+  type MapPoint = {
+    latitude_deg?: number;
+    longitude_deg?: number;
+  };
+
+  function makeBounds(items: MapPoint[]) {
     if (items.length === 0) {
       return { minLat: 38.88, maxLat: 38.9, minLon: -77.05, maxLon: -77.02 };
     }
-    const lats = items.map((item) => item.latitude_deg || 38.8895);
-    const lons = items.map((item) => item.longitude_deg || -77.0353);
+    const lats = items.map((item) => item.latitude_deg ?? 38.8895);
+    const lons = items.map((item) => item.longitude_deg ?? -77.0353);
     const minLat = Math.min(...lats);
     const maxLat = Math.max(...lats);
     const minLon = Math.min(...lons);
@@ -172,9 +186,44 @@
   }
 
   function markerStyle(vehicle: Vehicle) {
-    const x = ((vehicle.longitude_deg - bounds.minLon) / (bounds.maxLon - bounds.minLon || 1)) * 100;
-    const y = 100 - ((vehicle.latitude_deg - bounds.minLat) / (bounds.maxLat - bounds.minLat || 1)) * 100;
-    return `left:${Math.min(96, Math.max(4, x))}%;top:${Math.min(94, Math.max(6, y))}%;transform:rotate(${vehicle.heading_deg}deg);`;
+    return `${pointStyle(vehicle)}transform:rotate(${vehicle.heading_deg}deg);`;
+  }
+
+  function pointStyle(point: MapPoint) {
+    const x = (((point.longitude_deg ?? -77.0353) - bounds.minLon) / (bounds.maxLon - bounds.minLon || 1)) * 100;
+    const y = 100 - (((point.latitude_deg ?? 38.8895) - bounds.minLat) / (bounds.maxLat - bounds.minLat || 1)) * 100;
+    return `left:${Math.min(96, Math.max(4, x))}%;top:${Math.min(94, Math.max(6, y))}%;`;
+  }
+
+  function copTitle(item: COPView) {
+    return item.label ?? item.callsign ?? item.text ?? item.uid;
+  }
+
+  function messageTitle(item: COPView) {
+    const from = item.callsign || item.sender_uid || item.uid;
+    return item.text ? `${from}: ${item.text}` : from;
+  }
+
+  function markerAriaLabel(vehicle: Vehicle) {
+    return `${vehicle.callsign} UAV`;
+  }
+
+  function copAriaLabel(item: COPView) {
+    const label = copTitle(item);
+    return `${label} ${item.kind}`;
+  }
+
+  function messageAriaLabel(item: COPView) {
+    return `${messageTitle(item)} chat`;
+  }
+
+  function fallbackText(value: string | undefined, fallback: string) {
+    return value && value.trim() ? value : fallback;
+  }
+
+  function shortText(value: string, max = 26) {
+    if (value.length <= max) return value;
+    return `${value.slice(0, max - 3)}...`;
   }
 
   function batteryClass(vehicle: Vehicle) {
@@ -243,18 +292,35 @@
       </div>
       <div class="mission-map">
         <div class="runway"></div>
+        <div class="map-legend">
+          <span><i class="legend-swatch uav"></i>UAV</span>
+          <span><i class="legend-swatch operator"></i>Operator</span>
+          <span><i class="legend-swatch marker-poi"></i>Marker</span>
+          <span><i class="legend-swatch message"></i>Chat</span>
+        </div>
         {#each vehicles as vehicle}
           <button
             class="marker {batteryClass(vehicle)}"
             class:selected={selected?.entity_id === vehicle.entity_id}
             style={markerStyle(vehicle)}
             title={vehicle.callsign}
-            aria-label={vehicle.callsign}
+            aria-label={markerAriaLabel(vehicle)}
             onclick={() => (selectedID = vehicle.entity_id)}
             type="button"
           >
             <span></span>
           </button>
+        {/each}
+        {#each operators.filter((item) => item.has_position) as operator}
+          <div class="cop-dot operator-dot" style={pointStyle(operator)} title={copTitle(operator)} aria-label={copAriaLabel(operator)} role="img"></div>
+          <span class="map-label operator-label" style={pointStyle(operator)}>{shortText(fallbackText(operator.callsign, operator.uid), 18)}</span>
+        {/each}
+        {#each markers.filter((item) => item.has_position) as marker}
+          <div class="cop-dot poi-dot" style={pointStyle(marker)} title={copTitle(marker)} aria-label={copAriaLabel(marker)} role="img"></div>
+          <span class="map-label poi-label" style={pointStyle(marker)}>{shortText(fallbackText(marker.label, marker.uid), 18)}</span>
+        {/each}
+        {#each messages as message}
+          <div class="cop-dot message-dot" style={pointStyle(message)} title={messageTitle(message)} aria-label={messageAriaLabel(message)} role="img"></div>
         {/each}
       </div>
     </section>

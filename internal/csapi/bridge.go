@@ -14,6 +14,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/c360studio/semlink/internal/cop"
 	"github.com/c360studio/semlink/internal/gcs"
 )
 
@@ -51,6 +52,10 @@ type Bridge struct {
 	alertsPosted     map[string]struct{}
 	controlStreams   map[string]string
 	commandsPosted   map[string]struct{}
+	copSystems       map[string]string
+	copDatastreams   map[string]string
+	markersPosted    map[string]struct{}
+	messagesPosted   map[string]struct{}
 }
 
 type metricSpec struct {
@@ -132,6 +137,10 @@ func NewBridge(cfg Config, store Snapshotter) (*Bridge, error) {
 		alertsPosted:     make(map[string]struct{}),
 		controlStreams:   make(map[string]string),
 		commandsPosted:   make(map[string]struct{}),
+		copSystems:       make(map[string]string),
+		copDatastreams:   make(map[string]string),
+		markersPosted:    make(map[string]struct{}),
+		messagesPosted:   make(map[string]struct{}),
 	}, nil
 }
 
@@ -183,6 +192,39 @@ func (b *Bridge) Sync(ctx context.Context) error {
 	}
 	for _, command := range snapshot.Commands {
 		if err := b.postCommand(ctx, vehicleByEntity, command); err != nil {
+			return err
+		}
+	}
+	operatorsByEntity := make(map[string]cop.View, len(snapshot.Operators))
+	operatorsByUID := make(map[string]cop.View, len(snapshot.Operators))
+	for _, operator := range snapshot.Operators {
+		operatorsByEntity[operator.EntityID] = operator
+		operatorsByUID[operator.UID] = operator
+		if operator.LastSeen.IsZero() {
+			continue
+		}
+		systemID, err := b.ensureCOPSystem(ctx, operator.EntityID, operator.UID, firstNonEmpty(operator.Callsign, operator.UID), "SemLink TAK operator projected into CS API.", operator)
+		if err != nil {
+			return err
+		}
+		if err := b.ensureOperatorPositionDatastream(ctx, systemID, operator); err != nil {
+			return err
+		}
+		if err := b.postOperatorPositionObservation(ctx, operator); err != nil {
+			return err
+		}
+	}
+	for _, marker := range snapshot.Markers {
+		if err := b.postMarkerFeature(ctx, marker); err != nil {
+			return err
+		}
+	}
+	for _, message := range snapshot.Messages {
+		operator, ok := operatorsByEntity[message.SenderEntity]
+		if !ok {
+			operator = operatorsByUID[message.SenderUID]
+		}
+		if err := b.postCOPMessage(ctx, operator, message); err != nil {
 			return err
 		}
 	}
@@ -374,6 +416,158 @@ func (b *Bridge) ensureControlStream(ctx context.Context, systemID string, vehic
 	return id, nil
 }
 
+func (b *Bridge) ensureCOPSystem(ctx context.Context, key, uid, name, description string, view cop.View) (string, error) {
+	if id := b.copSystems[key]; id != "" {
+		return id, nil
+	}
+	if uid == "" {
+		uid = key
+	}
+	body := map[string]any{
+		"type": "Feature",
+		"properties": map[string]any{
+			"uid":         uid,
+			"name":        firstNonEmpty(name, uid),
+			"description": description,
+		},
+	}
+	if view.HasPosition {
+		body["geometry"] = pointGeometry(view.LongitudeDeg, view.LatitudeDeg, view.AltitudeM)
+	}
+	result, err := b.postJSON(ctx, "/systems", string(mediaJSON), body)
+	if err != nil {
+		return "", err
+	}
+	if result.ID == "" {
+		return "", errors.New("csapi bridge: POST /systems for COP entity returned no id")
+	}
+	b.copSystems[key] = result.ID
+	return result.ID, nil
+}
+
+func (b *Bridge) ensureOperatorPositionDatastream(ctx context.Context, systemID string, operator cop.View) error {
+	if b.copDatastreams[operator.EntityID] != "" {
+		return nil
+	}
+	id := copDatastreamID(operator)
+	body := map[string]any{
+		"id":               id,
+		"name":             fmt.Sprintf("%s position", firstNonEmpty(operator.Callsign, operator.UID)),
+		"description":      "SemLink TAK operator position projected into CS API.",
+		"system":           systemID,
+		"observedProperty": "https://c360.studio/def/cop/operatorPosition",
+		"phenomenonTime":   rfc3339(operator.LastSeen),
+		"resultTime":       rfc3339(operator.LastSeen),
+		"schema": map[string]any{
+			"type": "DataRecord",
+			"fields": []map[string]any{
+				{"name": "latitude", "type": "Quantity", "uomCode": "deg"},
+				{"name": "longitude", "type": "Quantity", "uomCode": "deg"},
+				{"name": "altitude", "type": "Quantity", "uomCode": "m"},
+			},
+		},
+	}
+	if _, err := b.postJSON(ctx, "/datastreams", string(mediaJSON), body); err != nil {
+		return err
+	}
+	b.copDatastreams[operator.EntityID] = id
+	return nil
+}
+
+func (b *Bridge) postOperatorPositionObservation(ctx context.Context, operator cop.View) error {
+	streamID := b.copDatastreams[operator.EntityID]
+	if streamID == "" || !operator.HasPosition {
+		return nil
+	}
+	if last := b.lastObservations[streamID]; !last.IsZero() && !operator.LastSeen.After(last.Add(b.cfg.ObservationInterval)) {
+		return nil
+	}
+	body := map[string]any{
+		"id":               copObservationID(operator),
+		"procedure":        "urn:c360:semlink:tak-bridge",
+		"observedProperty": "https://c360.studio/def/cop/operatorPosition",
+		"resultTime":       rfc3339(operator.LastSeen),
+		"result": map[string]any{
+			"latitude":  operator.LatitudeDeg,
+			"longitude": operator.LongitudeDeg,
+			"altitude":  operator.AltitudeM,
+		},
+	}
+	if _, err := b.postJSON(ctx, "/datastreams/"+streamID+"/observations", mediaOMS, body); err != nil {
+		return err
+	}
+	b.lastObservations[streamID] = operator.LastSeen
+	return nil
+}
+
+func (b *Bridge) postMarkerFeature(ctx context.Context, marker cop.View) error {
+	if _, ok := b.markersPosted[marker.EntityID]; ok {
+		return nil
+	}
+	body := map[string]any{
+		"type":     "Feature",
+		"geometry": pointGeometry(marker.LongitudeDeg, marker.LatitudeDeg, marker.AltitudeM),
+		"properties": map[string]any{
+			"uid":         marker.UID,
+			"name":        firstNonEmpty(marker.Label, marker.UID),
+			"description": marker.Description,
+		},
+	}
+	if _, err := b.postJSON(ctx, "/samplingFeatures", string(mediaJSON), body); err != nil {
+		return err
+	}
+	b.markersPosted[marker.EntityID] = struct{}{}
+	return nil
+}
+
+func (b *Bridge) postCOPMessage(ctx context.Context, operator cop.View, message cop.View) error {
+	if _, ok := b.messagesPosted[message.EntityID]; ok {
+		return nil
+	}
+	systemKey := message.SenderEntity
+	systemUID := message.SenderUID
+	systemName := message.Callsign
+	systemView := operator
+	if systemKey == "" {
+		systemKey = "message-sender:" + firstNonEmpty(systemUID, message.UID)
+	}
+	if systemUID == "" {
+		systemUID = firstNonEmpty(operator.UID, message.UID)
+	}
+	if systemName == "" {
+		systemName = firstNonEmpty(operator.Callsign, systemUID)
+	}
+	if !systemView.HasPosition && message.HasPosition {
+		systemView = message
+	}
+	systemID, err := b.ensureCOPSystem(ctx, systemKey, systemUID, systemName, "SemLink TAK GeoChat sender projected into CS API.", systemView)
+	if err != nil {
+		return err
+	}
+	body := map[string]any{
+		"id":        copEventID(message),
+		"system@id": systemID,
+		"eventTime": rfc3339(message.LastSeen),
+		"eventType": "GeoChat",
+		"message":   message.Text,
+		"source":    "semlink-tak",
+		"severity":  "info",
+		"keywords":  []string{"tak", "geochat"},
+		"payload": map[string]any{
+			"cot_uid":        message.UID,
+			"sender_uid":     message.SenderUID,
+			"sender_entity":  message.SenderEntity,
+			"semlink_cop":    message.EntityID,
+			"graph_revision": message.GraphRevision,
+		},
+	}
+	if _, err := b.postJSON(ctx, "/systems/"+systemID+"/events", string(mediaJSON), body); err != nil {
+		return err
+	}
+	b.messagesPosted[message.EntityID] = struct{}{}
+	return nil
+}
+
 type postResult struct {
 	ID string
 }
@@ -456,6 +650,13 @@ func quantitySchema(uomCode string) map[string]any {
 	}
 }
 
+func pointGeometry(lon, lat, alt float64) map[string]any {
+	return map[string]any{
+		"type":        "Point",
+		"coordinates": []float64{lon, lat, alt},
+	}
+}
+
 func vehicleToken(vehicle gcs.VehicleView) string {
 	if vehicle.SystemID > 0 {
 		return fmt.Sprintf("uav-%03d", vehicle.SystemID)
@@ -481,6 +682,18 @@ func controlStreamID(vehicle gcs.VehicleView) string {
 
 func commandID(command gcs.CommandView) string {
 	return "c360.semlink.robotics.csapi.command." + safeToken(lastToken(command.EntityID))
+}
+
+func copDatastreamID(view cop.View) string {
+	return "c360.semlink.cop.csapi.datastream.position-" + safeToken(lastToken(view.EntityID))
+}
+
+func copObservationID(view cop.View) string {
+	return fmt.Sprintf("semlink-cop-%s-position-%d", safeToken(lastToken(view.EntityID)), view.LastSeen.UnixMilli())
+}
+
+func copEventID(view cop.View) string {
+	return "c360.semlink.cop.csapi.event." + safeToken(lastToken(view.EntityID))
 }
 
 func lastToken(id string) string {
@@ -531,6 +744,15 @@ func titleToken(s string) string {
 		return "SystemChanged"
 	}
 	return b.String()
+}
+
+func firstNonEmpty(values ...string) string {
+	for _, value := range values {
+		if strings.TrimSpace(value) != "" {
+			return strings.TrimSpace(value)
+		}
+	}
+	return ""
 }
 
 func rfc3339(t time.Time) string {

@@ -10,6 +10,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/c360studio/semlink/internal/cop"
 	"github.com/c360studio/semlink/internal/gcs"
 )
 
@@ -87,7 +88,20 @@ func idForRequest(path string, body map[string]any) string {
 		return id
 	}
 	if path == "/systems" {
-		return "c360.semconnect.systems.csapi.system.uav-001"
+		if props, _ := body["properties"].(map[string]any); props != nil {
+			if uid, _ := props["uid"].(string); uid != "" {
+				return "c360.semconnect.systems.csapi.system." + safeToken(uid)
+			}
+		}
+		return "c360.semconnect.systems.csapi.system.unknown"
+	}
+	if path == "/samplingFeatures" {
+		if props, _ := body["properties"].(map[string]any); props != nil {
+			if uid, _ := props["uid"].(string); uid != "" {
+				return "c360.semconnect.systems.csapi.samplingfeature." + safeToken(uid)
+			}
+		}
+		return "c360.semconnect.systems.csapi.samplingfeature.unknown"
 	}
 	if strings.Contains(path, "/observations") {
 		return "observation-001"
@@ -97,6 +111,18 @@ func idForRequest(path string, body map[string]any) string {
 
 func TestBridgeSyncPublishesCuratedCSAPIProjection(t *testing.T) {
 	now := time.Date(2026, 6, 14, 15, 4, 5, 0, time.UTC)
+	operatorID, err := cop.EntityID(cop.KindOperator, "ANDROID-1")
+	if err != nil {
+		t.Fatalf("operator id: %v", err)
+	}
+	markerID, err := cop.EntityID(cop.KindMarker, "marker-1")
+	if err != nil {
+		t.Fatalf("marker id: %v", err)
+	}
+	messageID, err := cop.EntityID(cop.KindMessage, "chat-1")
+	if err != nil {
+		t.Fatalf("message id: %v", err)
+	}
 	store := staticStore{snapshot: gcs.Snapshot{
 		GeneratedAt: now,
 		Vehicles: []gcs.VehicleView{{
@@ -130,6 +156,44 @@ func TestBridgeSyncPublishesCuratedCSAPIProjection(t *testing.T) {
 			RequestedAt:   now,
 			GraphRevision: 44,
 		}},
+		Operators: []cop.View{{
+			Kind:            cop.KindOperator,
+			EntityID:        operatorID,
+			UID:             "ANDROID-1",
+			Callsign:        "ALPHA",
+			LatitudeDeg:     38.91,
+			LongitudeDeg:    -77.04,
+			AltitudeM:       20,
+			HasPosition:     true,
+			LastSeen:        now,
+			GraphRevision:   45,
+			IndexingProfile: "signal",
+		}},
+		Markers: []cop.View{{
+			Kind:            cop.KindMarker,
+			EntityID:        markerID,
+			UID:             "marker-1",
+			Label:           "Checkpoint",
+			Description:     "north gate",
+			LatitudeDeg:     38.92,
+			LongitudeDeg:    -77.05,
+			HasPosition:     true,
+			LastSeen:        now,
+			GraphRevision:   46,
+			IndexingProfile: "content",
+		}},
+		Messages: []cop.View{{
+			Kind:            cop.KindMessage,
+			EntityID:        messageID,
+			UID:             "chat-1",
+			Callsign:        "ALPHA",
+			Text:            "hold at checkpoint",
+			SenderUID:       "ANDROID-1",
+			SenderEntity:    operatorID,
+			LastSeen:        now,
+			GraphRevision:   47,
+			IndexingProfile: "content",
+		}},
 	}}
 
 	recorder := &recordingCSAPI{}
@@ -149,17 +213,26 @@ func TestBridgeSyncPublishesCuratedCSAPIProjection(t *testing.T) {
 		t.Fatalf("Sync: %v", err)
 	}
 
-	if got := recorder.countPath("/systems"); got != 1 {
-		t.Fatalf("POST /systems count = %d, want 1", got)
+	if got := recorder.countPath("/systems"); got != 2 {
+		t.Fatalf("POST /systems count = %d, want 2", got)
 	}
-	if got := recorder.countPath("/datastreams"); got != 3 {
-		t.Fatalf("POST /datastreams count = %d, want 3", got)
+	if got := recorder.countPath("/datastreams"); got != 4 {
+		t.Fatalf("POST /datastreams count = %d, want 4", got)
 	}
 	if got := recorder.countPrefix("/datastreams/c360.semlink.robotics.csapi.datastream."); got != 3 {
 		t.Fatalf("observation count = %d, want 3", got)
 	}
+	if got := recorder.countPrefix("/datastreams/c360.semlink.cop.csapi.datastream."); got != 1 {
+		t.Fatalf("operator observation count = %d, want 1", got)
+	}
 	if got := recorder.countPath("/systems/c360.semconnect.systems.csapi.system.uav-001/events"); got != 1 {
 		t.Fatalf("system event count = %d, want 1", got)
+	}
+	if got := recorder.countPath("/samplingFeatures"); got != 1 {
+		t.Fatalf("sampling feature count = %d, want 1", got)
+	}
+	if got := recorder.countPath("/systems/c360.semconnect.systems.csapi.system.android-1/events"); got != 1 {
+		t.Fatalf("geochat system event count = %d, want 1", got)
 	}
 	if got := recorder.countPath("/controlstreams"); got != 1 {
 		t.Fatalf("controlstream count = %d, want 1", got)

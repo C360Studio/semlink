@@ -50,6 +50,22 @@ The helper scripts set safe default host ports:
 - `NATS_HOST_PORT=14222` for SemConnect NATS debug access
 - `SEMLINK_NATS_HOST_PORT=14224` for SemLink NATS debug access
 
+TAK is off by default in the Compose demo. Enable it through the same start
+script when you need CoT egress or inbound situational-awareness events:
+
+```bash
+SEMLINK_TAK_ENABLED=true \
+SEMLINK_TAK_INBOUND_UDP_LISTEN=:6970 \
+./scripts/demo-up.sh
+```
+
+`SEMLINK_TAK_ENABLED=true` enables outbound UDP multicast to
+`SEMLINK_TAK_MULTICAST_ADDR` (`239.2.3.1:6969` by default). Set
+`SEMLINK_TAK_TCP_LISTEN=:6969`, `SEMLINK_TAK_INBOUND_UDP_LISTEN=:6970`, or
+`SEMLINK_TAK_INBOUND_TCP_LISTEN=:6971` to open the corresponding bridge path.
+The start script publishes only the host ports for non-empty listen addresses;
+override them with the matching `*_HOST_PORT` or `*_CONTAINER_PORT` variables.
+
 For the first demo, keep SemLink and SemConnect on separate NATS/SemStreams
 stacks and connect them only through the CS API HTTP bridge. That makes the
 boundary obvious: SemLink owns MAVLink, operator state, raw telemetry streams,
@@ -95,6 +111,19 @@ The optional CS API bridge publishes a curated, low-rate standards view:
 Systems for UAVs, Datastreams for selected telemetry rollups, OMS
 Observations, SystemEvents for alerts, and Command metadata for operator
 intent. Raw MAVLink frames do not pass through CS API.
+
+The optional TAK / CoT bridge can emit the simulated swarm to TAK clients and
+ingest Tier 0 situational-awareness CoT events:
+
+```bash
+go run ./cmd/semgcs-demo -embedded-nats=true -tak=true
+```
+
+`-tak=true` enables outbound UDP multicast to `239.2.3.1:6969`. Use
+`-tak-tcp=:6969` for outbound TCP streaming, `-tak-inbound-udp=:6970` for
+inbound UDP CoT, and `-tak-inbound-tcp=:6971` for inbound TCP CoT. Inbound
+operator positions, markers, and GeoChat land as governed `cop.*` graph
+entities and are included in the CS API bridge when `-csapi-url` is enabled.
 
 The dashboard includes a source-aware graph lens for the selected vehicle:
 `SemLink Graph` shows the operational SemStreams state, while

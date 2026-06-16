@@ -8,7 +8,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/c360studio/semlink/internal/projector"
+	"github.com/c360studio/semlink/internal/graphprojection"
 	"github.com/c360studio/semstreams/graph"
 	"github.com/c360studio/semstreams/natsclient"
 	graphingest "github.com/c360studio/semstreams/processor/graph-ingest"
@@ -46,7 +46,7 @@ func NewGraphClient(requester requester, timeout time.Duration) *GraphClient {
 	}
 }
 
-func (c *GraphClient) UpsertProjection(ctx context.Context, p projector.Projection) (*WriteResult, error) {
+func (c *GraphClient) UpsertProjection(ctx context.Context, p graphprojection.Projection) (*WriteResult, error) {
 	if p.Entity == nil {
 		return nil, errors.New("semstreams graph upsert: nil entity")
 	}
@@ -70,7 +70,7 @@ func (c *GraphClient) UpsertProjection(ctx context.Context, p projector.Projecti
 
 var errEntityNotFound = errors.New("semstreams entity not found")
 
-func (c *GraphClient) createProjection(ctx context.Context, p projector.Projection) (*WriteResult, error) {
+func (c *GraphClient) createProjection(ctx context.Context, p graphprojection.Projection) (*WriteResult, error) {
 	createReq := graph.CreateEntityWithTriplesRequest{
 		Entity:          p.Entity,
 		Triples:         p.Triples,
@@ -101,7 +101,7 @@ func (c *GraphClient) createProjection(ctx context.Context, p projector.Projecti
 	return c.updateProjection(ctx, p)
 }
 
-func (c *GraphClient) updateProjection(ctx context.Context, p projector.Projection) (*WriteResult, error) {
+func (c *GraphClient) updateProjection(ctx context.Context, p graphprojection.Projection) (*WriteResult, error) {
 	updateReq := graph.UpdateEntityWithTriplesRequest{
 		Entity: &graph.EntityState{
 			ID:          p.Entity.ID,

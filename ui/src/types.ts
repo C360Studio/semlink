@@ -39,6 +39,29 @@ export type Command = {
   graph_revision: number;
 };
 
+export type COPKind = 'operator' | 'marker' | 'message';
+
+export type COPView = {
+  kind: COPKind;
+  entity_id: string;
+  uid: string;
+  callsign?: string;
+  label?: string;
+  description?: string;
+  text?: string;
+  sender_uid?: string;
+  sender_entity?: string;
+  latitude_deg?: number;
+  longitude_deg?: number;
+  altitude_m?: number;
+  heading_deg?: number;
+  ground_speed_mps?: number;
+  has_position: boolean;
+  last_seen: string;
+  graph_revision: number;
+  indexing_profile: string;
+};
+
 export type Metrics = {
   raw_frames: number;
   decoded_frames: number;
@@ -63,6 +86,9 @@ export type Snapshot = {
   vehicles: Vehicle[];
   alerts: Alert[];
   commands: Command[];
+  operators: COPView[];
+  markers: COPView[];
+  messages: COPView[];
   metrics: Metrics;
 };
 

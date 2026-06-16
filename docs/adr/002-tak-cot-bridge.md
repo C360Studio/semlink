@@ -89,7 +89,8 @@ triple builder, `ProjectionFromPayload`, the payload interface) is therefore a *
 ### Inbound CoT projection path
 
 Field clients' position reports, markers, and geochat are ingested via `internal/cot` decode → `internal/cop` translate →
-`semstreams.GraphClient`, landing as governed SKG entities under `c360.semlink.cop.*` (operator, marker, message).
+`semstreams.GraphClient`, landing as governed SKG entities under six-part `c360.semlink.cop.*` IDs (operator,
+marker, message).
 Because a CoT event is a self-contained snapshot keyed by string `uid` (identity, position, and course in one message)
 rather than fragments to accumulate, the `cop` translator is a thin `uid`-keyed mapper plus a last-seen / stale tracker —
 much lighter than `projector`'s `vehicleAccumulator`. The MAVLink accumulator is untouched.
@@ -120,14 +121,16 @@ messages stays `content`.
 
 Two cases, decided differently:
 
-- **`cop.*` entities (operators, markers, messages)** get SemLink-minted IDs derived deterministically from the CoT
+- **`cop.*` entities (operators, markers, messages)** get SemLink-minted six-part IDs derived deterministically from the CoT
   `uid`. Determinism means no durable mapping store is needed — a restart re-derives the same IDs — so the in-memory,
   derive-on-demand pattern the `csapi` bridge uses is sufficient. The derivation must be **collision-safe**, however: CoT
   UIDs are arbitrary strings, and the repo's existing `safeToken` helpers (e.g. `internal/csapi/bridge.go`) are *lossy*
   normalizers that collapse runs of non-alphanumerics, so two distinct UIDs can map to one token. The `cop` ID therefore
   uses a collision-safe encoding of the raw UID — base32url (no padding), or a human-readable slug with a hash suffix for
-  legibility — never bare `safeToken`. The raw CoT UID is always preserved as a predicate (`cop.identity.cot_uid`) for
-  audit and debugging. `safeToken` may still be used for display labels, never for identity.
+  legibility — never bare `safeToken`; the current six-part shapes are `c360.semlink.cop.operator.position.<uid-token>`,
+  `c360.semlink.cop.marker.poi.<uid-token>`, and `c360.semlink.cop.message.geochat.<uid-token>`. The raw CoT UID is always
+  preserved as a predicate (`cop.identity.cot_uid`) for audit and debugging. `safeToken` may still be used for display
+  labels, never for identity.
 - **Cross-source UAV reconciliation** (a TAK client reporting a UAV that MAVLink also produces as `uav-NNN`) is a durable
   equivalence / identity-resolution problem (a sameAs policy) and is **out of scope for the demo**. In the demo, TAK is a
   *consumer* of UAV tracks (outbound), never a second *producer*; inbound TAK only creates `cop.*` entities, which never

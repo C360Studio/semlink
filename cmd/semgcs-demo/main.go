@@ -14,6 +14,7 @@ import (
 	csbridge "github.com/c360studio/semlink/internal/csapi"
 	"github.com/c360studio/semlink/internal/gcs"
 	semruntime "github.com/c360studio/semlink/internal/semstreams"
+	"github.com/c360studio/semlink/internal/tak"
 )
 
 func main() {
@@ -28,6 +29,12 @@ func main() {
 		csapiURL       = flag.String("csapi-url", getenv("CS_API_URL", ""), "optional SemConnect CS API base URL for standards projection")
 		csapiInterval  = flag.Duration("csapi-interval", 2*time.Second, "SemConnect CS API bridge sync interval")
 		csapiObsEvery  = flag.Duration("csapi-observation-interval", 5*time.Second, "minimum interval between CS API observations per datastream")
+		takEnabled     = flag.Bool("tak", getenvBool("TAK_ENABLED", false), "enable TAK/CoT outbound multicast bridge")
+		takMulticast   = flag.String("tak-multicast", getenv("TAK_MULTICAST_ADDR", tak.DefaultMulticastAddr), "TAK outbound UDP multicast address")
+		takTCP         = flag.String("tak-tcp", getenv("TAK_TCP_LISTEN", ""), "optional TAK outbound TCP listen address")
+		takInboundUDP  = flag.String("tak-inbound-udp", getenv("TAK_INBOUND_UDP", ""), "optional TAK inbound UDP listen address")
+		takInboundTCP  = flag.String("tak-inbound-tcp", getenv("TAK_INBOUND_TCP", ""), "optional TAK inbound TCP listen address")
+		takInterval    = flag.Duration("tak-interval", tak.DefaultInterval, "TAK outbound publish interval")
 	)
 	flag.Parse()
 
@@ -69,6 +76,31 @@ func main() {
 			slog.String("csapi_url", *csapiURL),
 			slog.Duration("sync_interval", *csapiInterval),
 			slog.Duration("observation_interval", *csapiObsEvery))
+	}
+	if *takEnabled || *takTCP != "" || *takInboundUDP != "" || *takInboundTCP != "" {
+		multicast := ""
+		if *takEnabled {
+			multicast = *takMulticast
+		}
+		bridge, err := tak.NewBridge(tak.Config{
+			MulticastAddr:  multicast,
+			TCPListenAddr:  *takTCP,
+			InboundUDPAddr: *takInboundUDP,
+			InboundTCPAddr: *takInboundTCP,
+			Interval:       *takInterval,
+			Logger:         logger,
+		}, store, rt.Graph)
+		if err != nil {
+			logger.Error("failed to create TAK bridge", slog.Any("error", err))
+			os.Exit(1)
+		}
+		bridge.Start(ctx)
+		logger.Info("TAK/CoT bridge enabled",
+			slog.String("multicast", multicast),
+			slog.String("tcp", *takTCP),
+			slog.String("inbound_udp", *takInboundUDP),
+			slog.String("inbound_tcp", *takInboundTCP),
+			slog.Duration("interval", *takInterval))
 	}
 	demo, err := gcs.NewDemo(gcs.DemoConfig{
 		Vehicles:       *vehicles,
@@ -114,4 +146,15 @@ func getenv(key, fallback string) string {
 		return value
 	}
 	return fallback
+}
+
+func getenvBool(key string, fallback bool) bool {
+	switch os.Getenv(key) {
+	case "1", "true", "TRUE", "yes", "YES", "on", "ON":
+		return true
+	case "0", "false", "FALSE", "no", "NO", "off", "OFF":
+		return false
+	default:
+		return fallback
+	}
 }

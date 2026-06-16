@@ -38,6 +38,12 @@ services:
       - "-csapi-url=http://cs-api-server:8080"
       - "-csapi-interval=${SEMLINK_CSAPI_INTERVAL:-2s}"
       - "-csapi-observation-interval=${SEMLINK_CSAPI_OBSERVATION_INTERVAL:-5s}"
+      - "-tak=${SEMLINK_TAK_ENABLED:-false}"
+      - "-tak-multicast=${SEMLINK_TAK_MULTICAST_ADDR:-239.2.3.1:6969}"
+      - "-tak-tcp=${SEMLINK_TAK_TCP_LISTEN:-}"
+      - "-tak-inbound-udp=${SEMLINK_TAK_INBOUND_UDP_LISTEN:-}"
+      - "-tak-inbound-tcp=${SEMLINK_TAK_INBOUND_TCP_LISTEN:-}"
+      - "-tak-interval=${SEMLINK_TAK_INTERVAL:-1s}"
     ports:
       - "${SEMLINK_UI_HOST_PORT:-8080}:8080"
     healthcheck:

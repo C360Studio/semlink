@@ -14,6 +14,19 @@ If the sibling checkouts live elsewhere, set `SEMCONNECT_ROOT` and
 
 Open `http://127.0.0.1:8080`.
 
+To include TAK / CoT in the full Compose start path, enable the bridge with
+environment variables before invoking the script:
+
+```bash
+SEMLINK_TAK_ENABLED=true \
+SEMLINK_TAK_INBOUND_UDP_LISTEN=:6970 \
+./scripts/demo-up.sh
+```
+
+Use `SEMLINK_TAK_TCP_LISTEN=:6969` for outbound TCP streaming and
+`SEMLINK_TAK_INBOUND_TCP_LISTEN=:6971` for inbound TCP CoT. The start script
+publishes host ports only for TAK listen addresses that are set.
+
 If SemConnect's pinned semstreams vendor tree is missing, stage it once:
 
 ```bash
@@ -46,10 +59,11 @@ stack.
 4. Open the `Graph` panel on `SemLink Graph` and show the selected vehicle, signal-profiled telemetry facts,
    control-profiled alert, graph revision, and indexing profile.
 5. Send `Return`, `Hold`, or `Land` and show the command intent node/fact appear in the SemLink graph lens.
-6. If `-csapi-url` is enabled, switch the graph panel to `SemConnect Projection` and show the corresponding
+6. If TAK inbound is enabled, send or replay operator, marker, or GeoChat CoT and show the COP dots on the map.
+7. If `-csapi-url` is enabled, switch the graph panel to `SemConnect Projection` and show the corresponding
    CS API System, Datastreams, Observation history, SystemEvent, ControlStream, and Command.
-7. Wait for the final vehicle to enter its simulated link-loss window.
-8. Use curl as backup evidence that SemConnect receives the curated standards projection:
+8. Wait for the final vehicle to enter its simulated link-loss window.
+9. Use curl as backup evidence that SemConnect receives the curated standards projection:
 
 ```bash
 curl -s http://127.0.0.1:48080/systems
@@ -58,7 +72,7 @@ curl -s http://127.0.0.1:48080/systemEvents
 curl -s http://127.0.0.1:48080/commands
 ```
 
-9. Query the graph lens directly for the selected vehicle:
+10. Query the graph lens directly for the selected vehicle:
 
 ```bash
 curl -s 'http://127.0.0.1:8080/api/graph?vehicle_id=c360.semlink.robotics.fleet.drone.uav-001'

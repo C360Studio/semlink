@@ -5,6 +5,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/c360studio/semlink/internal/cop"
 	"github.com/c360studio/semlink/internal/projector"
 )
 
@@ -13,6 +14,9 @@ type Snapshot struct {
 	Vehicles    []VehicleView `json:"vehicles"`
 	Alerts      []AlertView   `json:"alerts"`
 	Commands    []CommandView `json:"commands"`
+	Operators   []cop.View    `json:"operators"`
+	Markers     []cop.View    `json:"markers"`
+	Messages    []cop.View    `json:"messages"`
 	Metrics     MetricsView   `json:"metrics"`
 }
 
@@ -77,25 +81,51 @@ type MetricsView struct {
 }
 
 type Store struct {
-	mu       sync.RWMutex
-	started  time.Time
-	vehicles map[string]VehicleView
-	alerts   map[string]AlertView
-	commands []CommandView
-	metrics  MetricsView
+	mu        sync.RWMutex
+	started   time.Time
+	vehicles  map[string]VehicleView
+	alerts    map[string]AlertView
+	commands  []CommandView
+	operators map[string]cop.View
+	markers   map[string]cop.View
+	messages  map[string]cop.View
+	metrics   MetricsView
 }
 
 func NewStore(natsURL string, embedded bool) *Store {
 	now := time.Now()
 	return &Store{
-		started:  now,
-		vehicles: make(map[string]VehicleView),
-		alerts:   make(map[string]AlertView),
+		started:   now,
+		vehicles:  make(map[string]VehicleView),
+		alerts:    make(map[string]AlertView),
+		operators: make(map[string]cop.View),
+		markers:   make(map[string]cop.View),
+		messages:  make(map[string]cop.View),
 		metrics: MetricsView{
 			NATSURL:            natsURL,
 			SemStreamsEmbedded: embedded,
 			StartedAt:          now,
 		},
+	}
+}
+
+func (s *Store) ApplyCOPView(view cop.View) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
+	switch view.Kind {
+	case cop.KindOperator:
+		existing := s.operators[view.EntityID]
+		view.GraphRevision = existing.GraphRevision
+		s.operators[view.EntityID] = view
+	case cop.KindMarker:
+		existing := s.markers[view.EntityID]
+		view.GraphRevision = existing.GraphRevision
+		s.markers[view.EntityID] = view
+	case cop.KindMessage:
+		existing := s.messages[view.EntityID]
+		view.GraphRevision = existing.GraphRevision
+		s.messages[view.EntityID] = view
 	}
 }
 
@@ -195,6 +225,18 @@ func (s *Store) RecordGraphWrite(entityID string, revision uint64, latency time.
 			s.commands[i].GraphRevision = revision
 		}
 	}
+	if operator, ok := s.operators[entityID]; ok {
+		operator.GraphRevision = revision
+		s.operators[entityID] = operator
+	}
+	if marker, ok := s.markers[entityID]; ok {
+		marker.GraphRevision = revision
+		s.markers[entityID] = marker
+	}
+	if message, ok := s.messages[entityID]; ok {
+		message.GraphRevision = revision
+		s.messages[entityID] = message
+	}
 }
 
 func (s *Store) RecordBuffer(size, capacity int, drops int64) {
@@ -235,6 +277,30 @@ func (s *Store) Snapshot() Snapshot {
 	})
 
 	commands := append([]CommandView(nil), s.commands...)
+	operators := make([]cop.View, 0, len(s.operators))
+	for _, operator := range s.operators {
+		operators = append(operators, operator)
+	}
+	sort.Slice(operators, func(i, j int) bool {
+		return operators[i].Callsign < operators[j].Callsign
+	})
+
+	markers := make([]cop.View, 0, len(s.markers))
+	for _, marker := range s.markers {
+		markers = append(markers, marker)
+	}
+	sort.Slice(markers, func(i, j int) bool {
+		return markers[i].LastSeen.After(markers[j].LastSeen)
+	})
+
+	messages := make([]cop.View, 0, len(s.messages))
+	for _, message := range s.messages {
+		messages = append(messages, message)
+	}
+	sort.Slice(messages, func(i, j int) bool {
+		return messages[i].LastSeen.After(messages[j].LastSeen)
+	})
+
 	metrics := s.metrics
 	uptime := time.Since(s.started).Seconds()
 	if uptime > 0 {
@@ -247,6 +313,9 @@ func (s *Store) Snapshot() Snapshot {
 		Vehicles:    vehicles,
 		Alerts:      alerts,
 		Commands:    commands,
+		Operators:   operators,
+		Markers:     markers,
+		Messages:    messages,
 		Metrics:     metrics,
 	}
 }

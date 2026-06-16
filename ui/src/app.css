@@ -232,8 +232,63 @@ small,
   );
 }
 
+.map-legend {
+  position: absolute;
+  z-index: 3;
+  top: 10px;
+  left: 10px;
+  display: grid;
+  grid-template-columns: repeat(2, max-content);
+  gap: 6px 12px;
+  border: 1px solid rgba(238, 244, 240, 0.12);
+  border-radius: 6px;
+  background: rgba(24, 28, 27, 0.82);
+  padding: 8px 10px;
+  color: #d7e1dc;
+  font-size: 0.76rem;
+}
+
+.map-legend span {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  white-space: nowrap;
+}
+
+.legend-swatch {
+  width: 10px;
+  height: 10px;
+  border-radius: 999px;
+  background: #5dd39e;
+  box-shadow: 0 0 0 2px rgba(24, 28, 27, 0.9);
+}
+
+.legend-swatch.uav {
+  width: 0;
+  height: 0;
+  border-left: 5px solid transparent;
+  border-right: 5px solid transparent;
+  border-bottom: 12px solid #5dd39e;
+  border-radius: 0;
+  background: transparent;
+}
+
+.legend-swatch.operator {
+  background: #60c2d6;
+}
+
+.legend-swatch.marker-poi {
+  border-radius: 3px;
+  background: #ffcb6b;
+}
+
+.legend-swatch.message {
+  background: #e8a8ff;
+}
+
 .marker {
   position: absolute;
+  z-index: 2;
   width: 28px;
   height: 28px;
   margin: -14px 0 0 -14px;
@@ -255,6 +310,57 @@ small,
 
 .marker.selected span {
   border-bottom-color: #ffffff;
+}
+
+.cop-dot {
+  position: absolute;
+  z-index: 2;
+  width: 14px;
+  height: 14px;
+  margin: -7px 0 0 -7px;
+  border: 2px solid rgba(24, 28, 27, 0.95);
+  border-radius: 999px;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.42);
+}
+
+.operator-dot {
+  background: #60c2d6;
+}
+
+.poi-dot {
+  width: 16px;
+  height: 16px;
+  margin: -8px 0 0 -8px;
+  border-radius: 4px;
+  background: #ffcb6b;
+  transform: rotate(45deg);
+}
+
+.message-dot {
+  width: 12px;
+  height: 12px;
+  margin: -6px 0 0 -6px;
+  background: #e8a8ff;
+}
+
+.map-label {
+  position: absolute;
+  z-index: 2;
+  max-width: 142px;
+  transform: translate(10px, -26px);
+  border-radius: 4px;
+  background: rgba(24, 28, 27, 0.82);
+  padding: 2px 6px;
+  color: #eef4f0;
+  font-size: 0.72rem;
+  font-weight: 680;
+  line-height: 1.2;
+  pointer-events: none;
+  white-space: nowrap;
+}
+
+.poi-label {
+  color: #ffdf91;
 }
 
 .readouts,

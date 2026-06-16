@@ -7,23 +7,17 @@ import (
 	"math"
 	"time"
 
-	"github.com/c360studio/semstreams/graph"
+	"github.com/c360studio/semlink/internal/graphprojection"
 	"github.com/c360studio/semstreams/message"
 	"github.com/c360studio/semstreams/payloadregistry"
 	"github.com/c360studio/semstreams/vocabulary"
 )
 
 type semType = message.Type
+type Projection = graphprojection.Projection
 
 func mustType(domain, category, version string) semType {
 	return semType{Domain: domain, Category: category, Version: version}
-}
-
-// Projection is one atomic graph write through SemStreams graph-ingest.
-type Projection struct {
-	Entity          *graph.EntityState
-	Triples         []message.Triple
-	IndexingProfile string
 }
 
 type VehicleStatePayload struct {
@@ -210,14 +204,7 @@ func RegisterPayloads(reg *payloadregistry.Registry) error {
 }
 
 func triple(subject, predicate string, object any, source string, timestamp time.Time, confidence float64) message.Triple {
-	return message.Triple{
-		Subject:    subject,
-		Predicate:  predicate,
-		Object:     object,
-		Source:     source,
-		Timestamp:  timestamp,
-		Confidence: confidence,
-	}
+	return graphprojection.Triple(subject, predicate, object, source, timestamp, confidence)
 }
 
 func projectionFromPayload(payload interface {
@@ -226,13 +213,5 @@ func projectionFromPayload(payload interface {
 	Triples() []message.Triple
 	IndexingProfile() string
 }, msgType message.Type, updatedAt time.Time) Projection {
-	return Projection{
-		Entity: &graph.EntityState{
-			ID:          payload.EntityID(),
-			MessageType: msgType,
-			UpdatedAt:   updatedAt,
-		},
-		Triples:         payload.Triples(),
-		IndexingProfile: payload.IndexingProfile(),
-	}
+	return graphprojection.ProjectionFromPayload(payload, msgType, updatedAt)
 }
