@@ -11,11 +11,16 @@ import (
 	"github.com/c360studio/semlink/internal/graphprojection"
 	"github.com/c360studio/semstreams/graph"
 	"github.com/c360studio/semstreams/natsclient"
+	semerrs "github.com/c360studio/semstreams/pkg/errs"
 	graphingest "github.com/c360studio/semstreams/processor/graph-ingest"
 )
 
 type requester interface {
 	Request(ctx context.Context, subject string, data []byte, timeout time.Duration) ([]byte, error)
+}
+
+type classifiedRequester interface {
+	RequestClassified(ctx context.Context, subject string, data []byte, timeout time.Duration) ([]byte, error)
 }
 
 type GraphClient struct {
@@ -79,26 +84,23 @@ func (c *GraphClient) createProjection(ctx context.Context, p graphprojection.Pr
 	}
 	createResp, err := requestJSON[graph.CreateEntityWithTriplesResponse](ctx, c, graphingest.SubjectEntityCreateWithTriples, createReq)
 	if err != nil {
-		return nil, err
-	}
-	if createResp.Success || createResp.Degraded {
+		if !hasGraphErrorCode(err, graph.ErrorCodeEntityExists) {
+			return nil, err
+		}
 		c.remember(p.Entity.ID)
-		return &WriteResult{
-			EntityID:   p.Entity.ID,
-			Revision:   createResp.KVRevision,
-			Created:    true,
-			Triples:    createResp.TriplesAdded,
-			Profile:    p.IndexingProfile,
-			Degraded:   createResp.Degraded,
-			SemStreams: true,
-		}, nil
-	}
-	if createResp.ErrorCode != graph.ErrorCodeEntityExists {
-		return nil, fmt.Errorf("semstreams create %s rejected: %s", p.Entity.ID, createResp.Error)
+		return c.updateProjection(ctx, p)
 	}
 
 	c.remember(p.Entity.ID)
-	return c.updateProjection(ctx, p)
+	return &WriteResult{
+		EntityID:   p.Entity.ID,
+		Revision:   createResp.KVRevision,
+		Created:    true,
+		Triples:    createResp.TriplesAdded,
+		Profile:    p.IndexingProfile,
+		Degraded:   createResp.Degraded,
+		SemStreams: true,
+	}, nil
 }
 
 func (c *GraphClient) updateProjection(ctx context.Context, p graphprojection.Projection) (*WriteResult, error) {
@@ -113,24 +115,26 @@ func (c *GraphClient) updateProjection(ctx context.Context, p graphprojection.Pr
 	}
 	updateResp, err := requestJSON[graph.UpdateEntityWithTriplesResponse](ctx, c, graphingest.SubjectEntityUpdateWithTriples, updateReq)
 	if err != nil {
+		if hasGraphErrorCode(err, graph.ErrorCodeEntityNotFound) {
+			return nil, errEntityNotFound
+		}
 		return nil, err
 	}
-	if updateResp.Success || updateResp.Degraded {
-		c.remember(p.Entity.ID)
-		return &WriteResult{
-			EntityID:   p.Entity.ID,
-			Revision:   updateResp.KVRevision,
-			Created:    false,
-			Triples:    updateResp.TriplesAdded,
-			Profile:    p.IndexingProfile,
-			Degraded:   updateResp.Degraded,
-			SemStreams: true,
-		}, nil
-	}
-	if updateResp.ErrorCode == graph.ErrorCodeEntityNotFound {
-		return nil, errEntityNotFound
-	}
-	return nil, fmt.Errorf("semstreams update %s rejected: %s", p.Entity.ID, updateResp.Error)
+	c.remember(p.Entity.ID)
+	return &WriteResult{
+		EntityID:   p.Entity.ID,
+		Revision:   updateResp.KVRevision,
+		Created:    false,
+		Triples:    updateResp.TriplesAdded,
+		Profile:    p.IndexingProfile,
+		Degraded:   updateResp.Degraded,
+		SemStreams: true,
+	}, nil
+}
+
+func hasGraphErrorCode(err error, code string) bool {
+	var classified *semerrs.ClassifiedError
+	return errors.As(err, &classified) && classified.Code == code
 }
 
 func (c *GraphClient) isKnown(id string) bool {
@@ -177,7 +181,12 @@ func requestJSON[T any](ctx context.Context, c *GraphClient, subject string, req
 	if err != nil {
 		return zero, err
 	}
-	resp, err := c.requester.Request(ctx, subject, data, c.timeout)
+	var resp []byte
+	if requester, ok := c.requester.(classifiedRequester); ok {
+		resp, err = requester.RequestClassified(ctx, subject, data, c.timeout)
+	} else {
+		resp, err = c.requester.Request(ctx, subject, data, c.timeout)
+	}
 	if err != nil {
 		return zero, err
 	}

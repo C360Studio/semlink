@@ -4,20 +4,24 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## What This Is
 
-SemLink is a **SemStreams-consuming ground-control (GCS) demo** for a simulated UAV
-swarm. It proves that high-volume MAVLink telemetry can be handled with a semantic
-control plane without making the substrate own robotics concerns. The single binary
-(`cmd/semgcs-demo`) runs the simulator, decoder, projector, an in-memory store, and an
-HTTP server that serves the Svelte dashboard and a JSON/SSE API.
+SemLink is currently a **SemStreams-consuming ground-control (GCS) demo** for a
+simulated UAV swarm. It proves that high-volume MAVLink telemetry can be handled
+with a semantic control plane without making the substrate own robotics
+concerns. The single binary (`cmd/semgcs-demo`) runs the simulator, decoder,
+projector, an in-memory store, and an HTTP server that serves the Svelte
+dashboard and a JSON/SSE API.
 
-The product boundary (see `docs/adr/001-semgcs-product-boundary.md`) is the most
-important thing to internalize before changing code:
+The forward product boundary is ADR 003:
+`docs/adr/003-companion-mesh-product-boundary.md`. ADR 001 remains historical
+context for the implemented SemGCS demo.
 
-- **SemLink owns** MAVLink decoding, source adapters (sim today, PX4 SITL next),
-  operator command vocabulary, the GCS dashboard, and the `robot.*` semantic predicates.
+- **SemLink owns** MAVLink decoding, source adapters, vehicle-local companion
+  service behavior, local rules, mesh-visible current-state summaries, operator
+  command vocabulary, and the robotics semantic predicates.
 - **SemStreams owns** the substrate: NATS/JetStream, the `graph-ingest` processor,
   `ENTITY_STATES`, mutation/query subjects, projection-ownership contracts, and indexing
   profiles. SemLink only *writes through* it.
+- **SemOps** owns the kitchen-sink COP / fusion product surface.
 - **SemConnect** (optional, downstream) receives a curated, decimated OGC Connected
   Systems (CS API) view over HTTP. Raw MAVLink never flows through SemConnect.
 
@@ -50,6 +54,10 @@ npm --prefix ui run dev   # Vite at :5173
 # Full two-stack demo via Docker Compose (needs ../semconnect, ../semstreams, Docker)
 ./scripts/demo-up.sh      # SemLink UI :8080, SemConnect CS API :48080
 ./scripts/demo-down.sh
+
+# OpenSpec governance for product-boundary or contract-sized changes
+openspec validate --all --strict
+openspec validate pivot-companion-mesh --strict
 ```
 
 The Go unit tests use in-memory fakes (e.g. `fakeRequester` in
@@ -110,6 +118,9 @@ split is the whole point of the demo — preserve it.
 
 ## Conventions & Gotchas
 
+- **OpenSpec:** large product-boundary changes, mesh protocol changes, command-transmit
+  changes, and SemStreams contract migrations should start under `openspec/changes/`.
+  The active forward pivot is `openspec/changes/pivot-companion-mesh/`.
 - **Entity IDs** are dotted, hierarchical, and parsed by convention:
   `c360.semlink.robotics.fleet.drone.uav-NNN`, `...fleet.alert.<kind>-uav-NNN`,
   `...fleet.command.<verb>-uav-NNN-<unixmilli>`. `systemIDFromEntity` extracts the `uav-NNN`

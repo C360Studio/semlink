@@ -3,7 +3,7 @@ module github.com/c360studio/semlink
 go 1.26.3
 
 require (
-	github.com/c360studio/semstreams v0.0.0
+	github.com/c360studio/semstreams v1.0.0-beta.137
 	github.com/nats-io/nats-server/v2 v2.12.4
 	github.com/nats-io/nats.go v1.48.0
 )

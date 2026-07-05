@@ -23,10 +23,14 @@ type Simulator struct {
 }
 
 func NewSimulator(vehicles int) *Simulator {
+	return NewSimulatorWithStart(vehicles, time.Now())
+}
+
+func NewSimulatorWithStart(vehicles int, start time.Time) *Simulator {
 	if vehicles < 1 {
 		vehicles = 1
 	}
-	return &Simulator{vehicles: vehicles, start: time.Now()}
+	return &Simulator{vehicles: vehicles, start: start}
 }
 
 // Next returns the frames due for the given tick. The last vehicle periodically

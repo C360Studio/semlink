@@ -3,11 +3,13 @@ package semstreams
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"testing"
 	"time"
 
 	"github.com/c360studio/semlink/internal/projector"
 	"github.com/c360studio/semstreams/graph"
+	semerrs "github.com/c360studio/semstreams/pkg/errs"
 	graphingest "github.com/c360studio/semstreams/processor/graph-ingest"
 )
 
@@ -16,15 +18,17 @@ type fakeRequester struct {
 }
 
 func (f *fakeRequester) Request(_ context.Context, subject string, _ []byte, _ time.Duration) ([]byte, error) {
+	return f.RequestClassified(context.Background(), subject, nil, 0)
+}
+
+func (f *fakeRequester) RequestClassified(_ context.Context, subject string, _ []byte, _ time.Duration) ([]byte, error) {
 	f.calls = append(f.calls, subject)
 	switch subject {
 	case graphingest.SubjectEntityCreateWithTriples:
-		return json.Marshal(graph.CreateEntityWithTriplesResponse{
-			MutationResponse: graph.MutationResponse{Success: false, ErrorCode: graph.ErrorCodeEntityExists},
-		})
+		return nil, semerrs.ClassifiedCode(semerrs.ErrorInvalid, graph.ErrorCodeEntityExists, errors.New("entity already exists"))
 	case graphingest.SubjectEntityUpdateWithTriples:
 		return json.Marshal(graph.UpdateEntityWithTriplesResponse{
-			MutationResponse: graph.MutationResponse{Success: true, KVRevision: 9},
+			MutationResponse: graph.MutationResponse{KVRevision: 9},
 			TriplesAdded:     2,
 		})
 	default:

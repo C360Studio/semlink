@@ -2,9 +2,13 @@
 
 ## Status
 
-Accepted, with phased implementation (not started). **Outbound first (Phase 0) is decided.** The one open item is
-cosmetic: whether to rebrand the UI's "SemGCS" label toward a COP identity. The `cop.*` entity/domain naming below is
-decided and is independent of that UI rebrand.
+Accepted for the SemLink TAK / CoT bridge. Broad SemLink-as-COP product
+positioning is superseded by [ADR 003](003-companion-mesh-product-boundary.md).
+
+Outbound first (Phase 0) remains decided. The `cop.*` entity/domain naming below
+still applies to the TAK / CoT bridge code paths that live in SemLink, but it no
+longer implies that SemLink should become the kitchen-sink COP. SemOps now owns
+that COP / fusion product surface.
 
 ## Context
 
@@ -192,9 +196,9 @@ standards-consumer path.
 ## Consequences
 
 Phase 0 is cheap and independent: it reuses the store and the `csapi` bridge pattern and needs no new domain or
-projection code, so outbound-first carries the least risk and the highest demo value. It keeps the ADR 001 product
-boundary intact: SemLink owns protocol adapters and operator UX, SemStreams owns the substrate, SemConnect owns the
-standards view. TAK becomes just another adapter family.
+projection code, so outbound-first carries the least risk and the highest demo value. It preserves the
+adapter/substrate/standards split from ADR 001, now carried forward by ADR 003: SemLink owns protocol adapters and
+operator UX, SemStreams owns the substrate, SemConnect owns the standards view. TAK becomes just another adapter family.
 
 Phase 1 carries named, non-optional prerequisites that earlier drafts understated: the `graphprojection` extraction
 (because the reusable helpers are unexported and MAVLink-entangled today), `cop` ownership/contracts/profiles plus
@@ -208,8 +212,8 @@ Hand-rolling the CoT codec means more code we own, but the subset is small and t
 velocity mismatch — the trade ADR 001 already accepted for MAVLink. The clean-room posture costs us copy-paste
 convenience and forbids studying `goatak`'s structure, but is required by its AGPL license.
 
-The UI rebrand — renaming "SemGCS" toward a COP identity and adding a third "TAK" graph lens source alongside `semlink`
-and `csapi` — remains the one open, cosmetic decision; the `cop.*` domain naming is already adopted above.
+The former UI rebrand question is closed by ADR 003: SemLink language should move toward companion / mesh operations,
+not a broad COP identity. The `cop.*` domain naming is already adopted above for TAK / CoT entities.
 
 ## Open questions
 
@@ -217,4 +221,5 @@ and `csapi` — remains the one open, cosmetic decision; the `cop.*` domain nami
   wire vectors to test against (resolves the clean-room source question concretely).
 - **SemConnect resource support:** verify CS API serving of Sampling Features, System Events, and mobile Systems before
   Phase 1 (decides SemLink-only vs SemConnect issue).
-- **UI rebrand:** "SemGCS" → COP identity, plus a third "TAK" graph lens source — cosmetic, deferred.
+- **UI rebrand:** superseded by ADR 003. Future SemLink UI language should move
+  toward companion / mesh operations, while SemOps owns the broader COP identity.

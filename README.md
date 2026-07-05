@@ -1,8 +1,12 @@
 # SemLink
 
-SemLink is a SemStreams-consuming ground-control demo. It owns MAVLink decoding, simulator/replay adapters,
-operator UX, and robotics language. SemStreams owns the semantic substrate: NATS/JetStream, graph-ingest,
-`ENTITY_STATES`, mutation/query subjects, projection contracts, and indexing-profile policy.
+SemLink is currently a SemStreams-consuming ground-control demo. The forward direction is a MAVLink companion
+mesh service for vehicle-local state, local rules, and intermittent peer replication. ADR 003 is the forward
+product boundary; ADR 001 remains the historical boundary for the implemented SemGCS demo.
+
+SemLink owns MAVLink decoding, simulator/replay adapters, operator UX, and robotics language. SemStreams owns
+the semantic substrate: NATS/JetStream, graph-ingest, `ENTITY_STATES`, mutation/query subjects, projection
+contracts, and indexing-profile policy.
 
 ## Run The Demo
 
@@ -90,6 +94,16 @@ processor.
 The demo uses a simulated MAVLink-like feed, but the frames are real unsigned MAVLink 2 envelopes for the subset we
 support now: `HEARTBEAT`, `SYS_STATUS`, and `GLOBAL_POSITION_INT`. It does not use MAVSDK.
 
+## Spec Workflow
+
+Product-boundary, mesh protocol, command-transmit, and SemStreams contract changes
+use OpenSpec before implementation. The active pivot is tracked under
+`openspec/changes/pivot-companion-mesh/`.
+
+```bash
+openspec validate --all --strict
+```
+
 ## Architecture
 
 ```text
@@ -134,5 +148,8 @@ TAK COP entity: `SemLink Graph` shows the operational SemStreams state, while
 
 ## Roadmap
 
-PX4 SITL is the next source adapter. It should feed UDP MAVLink packets into the same decoder and projector used by
-the simulator. The adapter boundary is `internal/mavlink.RawFrame`; no MAVSDK or equivalent vehicle SDK is planned.
+The next product slice is the ADR 003 companion-mesh pivot: several boat-local SemLink nodes, each with a local
+MAVLink feed and local SemStreams state, exchanging selected current-state summaries over an unreliable mesh harness.
+ArduRover / ArduPilot SITL without Gazebo should be the first autopilot fidelity lane; PX4 and Gazebo remain useful
+later lanes when the claim needs them. The adapter boundary is `internal/mavlink.RawFrame`; no MAVSDK or equivalent
+vehicle SDK is planned for this surface.

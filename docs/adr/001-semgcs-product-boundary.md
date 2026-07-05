@@ -2,7 +2,12 @@
 
 ## Status
 
-Accepted.
+Superseded by [ADR 003](003-companion-mesh-product-boundary.md).
+
+This ADR remains the historical boundary for the implemented SemGCS telemetry
+control-plane demo, including the SemConnect bridge and the "no MAVSDK for the
+demo surface" dependency posture. It is no longer the forward product spec for
+SemLink.
 
 ## Context
 
