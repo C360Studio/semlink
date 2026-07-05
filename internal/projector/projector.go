@@ -33,6 +33,7 @@ type vehicleAccumulator struct {
 	EntityID            string
 	Callsign            string
 	SystemID            uint8
+	VehicleType         string
 	Sequence            uint8
 	Armed               bool
 	Mode                string
@@ -90,6 +91,7 @@ func (p *Projector) Apply(msg mavlink.Message, observedAt time.Time) []Projectio
 	switch m := msg.(type) {
 	case mavlink.Heartbeat:
 		state.Armed = m.Armed()
+		state.VehicleType = mavlink.MAVTypeName(m.Type)
 		state.Mode = "guided"
 		state.FlightStatus = "active"
 	case mavlink.SysStatus:
@@ -172,6 +174,7 @@ func (p *Projector) stateFor(systemID uint8) *vehicleAccumulator {
 		EntityID:         VehicleEntityID(systemID),
 		Callsign:         fmt.Sprintf("UAV-%03d", systemID),
 		SystemID:         systemID,
+		VehicleType:      "unknown",
 		FlightStatus:     "initializing",
 		LinkStatus:       "online",
 		BatteryRemaining: 100,
@@ -190,6 +193,7 @@ func (p *Projector) payload(state *vehicleAccumulator) VehicleStatePayload {
 		ID:                  state.EntityID,
 		Callsign:            state.Callsign,
 		SystemID:            state.SystemID,
+		VehicleType:         state.VehicleType,
 		Sequence:            state.Sequence,
 		Armed:               state.Armed,
 		Mode:                state.Mode,

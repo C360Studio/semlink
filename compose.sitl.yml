@@ -1,0 +1,41 @@
+services:
+  semlink:
+    command:
+      - "-embedded-nats=false"
+      - "-nats-url=nats://semlink-nats:4222"
+      - "-static=/app/ui/dist"
+      - "-listen=:8080"
+      - "-vehicles=${SEMLINK_VEHICLES:-12}"
+      - "-hz=${SEMLINK_HZ:-20}"
+      - "-mavlink-udp=${SEMLINK_MAVLINK_UDP_LISTEN:-:14550}"
+      - "-csapi-url=http://cs-api-server:8080"
+      - "-csapi-interval=${SEMLINK_CSAPI_INTERVAL:-2s}"
+      - "-csapi-observation-interval=${SEMLINK_CSAPI_OBSERVATION_INTERVAL:-5s}"
+      - "-tak=${SEMLINK_TAK_ENABLED:-false}"
+      - "-tak-multicast=${SEMLINK_TAK_MULTICAST_ADDR:-239.2.3.1:6969}"
+      - "-tak-tcp=${SEMLINK_TAK_TCP_LISTEN:-}"
+      - "-tak-inbound-udp=${SEMLINK_TAK_INBOUND_UDP_LISTEN:-}"
+      - "-tak-inbound-tcp=${SEMLINK_TAK_INBOUND_TCP_LISTEN:-}"
+      - "-tak-interval=${SEMLINK_TAK_INTERVAL:-1s}"
+
+  ardupilot-sitl:
+    build:
+      context: .
+      dockerfile: docker/ardupilot-sitl/Dockerfile
+      args:
+        ARDUPILOT_REF: ${ARDUPILOT_REF:-master}
+    command:
+      - "-v"
+      - "Rover"
+      - "-f"
+      - "${ARDUPILOT_FRAME:-rover}"
+      - "--no-mavproxy"
+      - "--speedup=${ARDUPILOT_SPEEDUP:-1}"
+      - "--aircraft"
+      - "${ARDUPILOT_AIRCRAFT:-semlink-ardurover}"
+      - "-A"
+      - "--serial0=udpclient:semlink:${SEMLINK_MAVLINK_UDP_CONTAINER_PORT:-14550}"
+      - "-w"
+    depends_on:
+      semlink:
+        condition: service_healthy

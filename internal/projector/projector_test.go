@@ -57,6 +57,47 @@ func TestProjectorCollapsesRawMessagesToCurrentVehicleEntity(t *testing.T) {
 	}
 }
 
+func TestProjectorUsesHeartbeatMAVTypeForVehicleType(t *testing.T) {
+	p := New(DefaultConfig())
+	now := time.Unix(150, 0)
+	frame, err := mavlink.EncodeV2(1, 3, 1, mavlink.MessageHeartbeat,
+		mavlink.HeartbeatPayloadForType(true, 0, mavlink.MavTypeGroundRover))
+	if err != nil {
+		t.Fatalf("EncodeV2: %v", err)
+	}
+	msg, err := mavlink.DecodeMessage(frame)
+	if err != nil {
+		t.Fatalf("DecodeMessage: %v", err)
+	}
+
+	projections := p.Apply(msg, now)
+	if len(projections) != 1 {
+		t.Fatalf("projection count = %d", len(projections))
+	}
+
+	vehicles, _ := p.Snapshot()
+	if len(vehicles) != 1 {
+		t.Fatalf("vehicle count = %d", len(vehicles))
+	}
+	if vehicles[0].VehicleType != "ground-rover" {
+		t.Fatalf("vehicle type = %q, want ground-rover", vehicles[0].VehicleType)
+	}
+
+	var gotType any
+	for _, triple := range projections[0].Triples {
+		if triple.Predicate == PredicateVehicleType {
+			gotType = triple.Object
+			break
+		}
+	}
+	if gotType == nil {
+		t.Fatal("vehicle type triple missing")
+	}
+	if gotType != "ground-rover" {
+		t.Fatalf("vehicle type triple = %v, want ground-rover", gotType)
+	}
+}
+
 func TestProjectorEmitsControlPlaneAlerts(t *testing.T) {
 	p := New(Config{LowBatteryThreshold: 25, LostLinkAfter: time.Second})
 	now := time.Unix(200, 0)

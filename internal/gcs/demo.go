@@ -12,10 +12,11 @@ import (
 )
 
 type DemoConfig struct {
-	Vehicles       int
-	Hz             int
-	BufferCapacity int
-	Logger         *slog.Logger
+	Vehicles         int
+	Hz               int
+	BufferCapacity   int
+	MAVLinkUDPListen string
+	Logger           *slog.Logger
 }
 
 type Demo struct {
@@ -56,9 +57,38 @@ func NewDemo(cfg DemoConfig, rt *semruntime.Runtime, store *Store) (*Demo, error
 }
 
 func (d *Demo) Start(ctx context.Context) {
-	go d.runSimulator(ctx)
+	if d.cfg.MAVLinkUDPListen != "" {
+		go d.runUDPSource(ctx)
+	} else {
+		go d.runSimulator(ctx)
+	}
 	go d.runProjector(ctx)
 	go d.runLinkMonitor(ctx)
+}
+
+func (d *Demo) runUDPSource(ctx context.Context) {
+	source, err := mavlink.ListenUDP(mavlink.UDPSourceConfig{
+		ListenAddr:    d.cfg.MAVLinkUDPListen,
+		SubjectPrefix: "mavlink.raw.ardupilot-sitl",
+	})
+	if err != nil {
+		d.logger.Error("mavlink udp source failed", slog.String("listen", d.cfg.MAVLinkUDPListen), slog.Any("error", err))
+		return
+	}
+	defer source.Close()
+	d.logger.Info("mavlink udp source enabled", slog.String("listen", source.LocalAddr().String()))
+
+	for {
+		frame, err := source.Read(ctx)
+		if err != nil {
+			if ctx.Err() != nil {
+				return
+			}
+			d.logger.Warn("mavlink udp read failed", slog.Any("error", err))
+			continue
+		}
+		d.recordRawFrame(frame)
+	}
 }
 
 func (d *Demo) runSimulator(ctx context.Context) {
@@ -78,16 +108,22 @@ func (d *Demo) runSimulator(ctx context.Context) {
 				continue
 			}
 			for _, frame := range frames {
-				if err := d.buffer.Write(frame); err != nil {
-					d.logger.Warn("raw buffer write failed", slog.Any("error", err))
-				} else {
-					d.store.RecordRawFrame()
-				}
+				d.recordRawFrame(frame)
 			}
 			stats := d.buffer.Stats()
 			d.store.RecordBuffer(d.buffer.Size(), d.buffer.Capacity(), stats.Drops())
 		}
 	}
+}
+
+func (d *Demo) recordRawFrame(frame mavlink.RawFrame) {
+	if err := d.buffer.Write(frame); err != nil {
+		d.logger.Warn("raw buffer write failed", slog.Any("error", err))
+		return
+	}
+	d.store.RecordRawFrame()
+	stats := d.buffer.Stats()
+	d.store.RecordBuffer(d.buffer.Size(), d.buffer.Capacity(), stats.Drops())
 }
 
 func (d *Demo) runProjector(ctx context.Context) {

@@ -12,7 +12,7 @@
       helper code for porting or shared-module extraction
 - [x] 2.2 Add a deterministic multi-boat simulator harness with per-node local
       SemStreams state
-- [ ] 2.3 Add ArduRover / ArduPilot SITL telemetry lane without Gazebo
+- [x] 2.3 Add ArduRover / ArduPilot SITL telemetry lane without Gazebo
 - [ ] 2.4 Add BlueOS extension packaging skeleton and local lifecycle smoke
 - [ ] 2.5 Add read-only hardware smoke plan for a single Navigator-class device
 

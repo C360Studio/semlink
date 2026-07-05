@@ -24,6 +24,7 @@ type VehicleStatePayload struct {
 	ID                  string    `json:"entity_id"`
 	Callsign            string    `json:"callsign"`
 	SystemID            uint8     `json:"system_id"`
+	VehicleType         string    `json:"vehicle_type"`
 	Sequence            uint8     `json:"sequence"`
 	Armed               bool      `json:"armed"`
 	Mode                string    `json:"mode"`
@@ -70,10 +71,14 @@ func (p *VehicleStatePayload) Triples() []message.Triple {
 	if now.IsZero() {
 		now = time.Now()
 	}
+	vehicleType := p.VehicleType
+	if vehicleType == "" {
+		vehicleType = "unknown"
+	}
 	return []message.Triple{
 		triple(p.ID, PredicateVehicleCallsign, p.Callsign, SourceProjector, now, 1),
 		triple(p.ID, PredicateVehicleSystemID, int(p.SystemID), SourceMAVLink, now, 1),
-		triple(p.ID, PredicateVehicleType, "quadrotor", SourceMAVLink, now, 1),
+		triple(p.ID, PredicateVehicleType, vehicleType, SourceMAVLink, now, 1),
 		triple(p.ID, PredicateFlightArmed, p.Armed, SourceMAVLink, now, 1),
 		triple(p.ID, PredicateFlightMode, p.Mode, SourceMAVLink, now, 0.9),
 		triple(p.ID, PredicateFlightStatus, p.FlightStatus, SourceMAVLink, now, 1),

@@ -25,6 +25,7 @@ func main() {
 		vehicles       = flag.Int("vehicles", 12, "number of simulated vehicles")
 		hz             = flag.Int("hz", 20, "simulator ticks per second")
 		bufferCapacity = flag.Int("buffer", 10000, "raw telemetry buffer capacity")
+		mavlinkUDP     = flag.String("mavlink-udp", getenv("MAVLINK_UDP_LISTEN", ""), "optional external MAVLink UDP listen address; when set, disables the internal simulator")
 		staticDir      = flag.String("static", filepath.Join("ui", "dist"), "built UI static directory")
 		csapiURL       = flag.String("csapi-url", getenv("CS_API_URL", ""), "optional SemConnect CS API base URL for standards projection")
 		csapiInterval  = flag.Duration("csapi-interval", 2*time.Second, "SemConnect CS API bridge sync interval")
@@ -103,10 +104,11 @@ func main() {
 			slog.Duration("interval", *takInterval))
 	}
 	demo, err := gcs.NewDemo(gcs.DemoConfig{
-		Vehicles:       *vehicles,
-		Hz:             *hz,
-		BufferCapacity: *bufferCapacity,
-		Logger:         logger,
+		Vehicles:         *vehicles,
+		Hz:               *hz,
+		BufferCapacity:   *bufferCapacity,
+		MAVLinkUDPListen: *mavlinkUDP,
+		Logger:           logger,
 	}, rt, store)
 	if err != nil {
 		logger.Error("failed to create demo", slog.Any("error", err))
@@ -133,7 +135,8 @@ func main() {
 		slog.String("nats_url", rt.NATSURL),
 		slog.Bool("embedded_nats", *embeddedNATS),
 		slog.Int("vehicles", *vehicles),
-		slog.Int("hz", *hz))
+		slog.Int("hz", *hz),
+		slog.String("mavlink_udp", *mavlinkUDP))
 
 	if err := server.ListenAndServe(); err != nil && err != http.ErrServerClosed {
 		logger.Error("http server failed", slog.Any("error", err))

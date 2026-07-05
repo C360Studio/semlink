@@ -35,6 +35,7 @@ services:
       - "-listen=:8080"
       - "-vehicles=${SEMLINK_VEHICLES:-12}"
       - "-hz=${SEMLINK_HZ:-20}"
+      - "-mavlink-udp=${SEMLINK_MAVLINK_UDP_LISTEN:-}"
       - "-csapi-url=http://cs-api-server:8080"
       - "-csapi-interval=${SEMLINK_CSAPI_INTERVAL:-2s}"
       - "-csapi-observation-interval=${SEMLINK_CSAPI_OBSERVATION_INTERVAL:-5s}"

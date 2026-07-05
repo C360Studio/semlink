@@ -8,10 +8,27 @@ import (
 
 const (
 	MavTypeQuadrotor       = 2
+	MavTypeGroundRover     = 10
+	MavTypeSurfaceBoat     = 11
 	MavAutopilotGeneric    = 0
 	MavModeFlagSafetyArmed = 0x80
 	MavStateActive         = 4
 )
+
+// MAVTypeName returns the graph-facing vehicle type label for the MAVLink
+// heartbeat MAV_TYPE values SemLink currently projects.
+func MAVTypeName(vehicleType uint8) string {
+	switch vehicleType {
+	case MavTypeQuadrotor:
+		return "quadrotor"
+	case MavTypeGroundRover:
+		return "ground-rover"
+	case MavTypeSurfaceBoat:
+		return "surface-boat"
+	default:
+		return fmt.Sprintf("mav-type-%d", vehicleType)
+	}
+}
 
 // Message is a decoded MAVLink message supported by this demo.
 type Message interface {
@@ -144,9 +161,13 @@ func DecodeMessage(data []byte) (Message, error) {
 }
 
 func HeartbeatPayload(armed bool, customMode uint32) []byte {
+	return HeartbeatPayloadForType(armed, customMode, MavTypeQuadrotor)
+}
+
+func HeartbeatPayloadForType(armed bool, customMode uint32, vehicleType uint8) []byte {
 	payload := make([]byte, 9)
 	binary.LittleEndian.PutUint32(payload[0:4], customMode)
-	payload[4] = MavTypeQuadrotor
+	payload[4] = vehicleType
 	payload[5] = MavAutopilotGeneric
 	if armed {
 		payload[6] = MavModeFlagSafetyArmed
