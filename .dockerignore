@@ -1,6 +1,13 @@
 .git
 .cache
 .DS_Store
+**/.DS_Store
+._*
+**/._*
+Thumbs.db
+**/Thumbs.db
+Desktop.ini
+**/Desktop.ini
 Dockerfile
 ui/node_modules
 ui/dist

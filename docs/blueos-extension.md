@@ -1,0 +1,47 @@
+# BlueOS Extension Packaging
+
+SemLink's BlueOS lane packages the companion service as an Extension-style
+Docker image. This is a packaging and lifecycle proof, not a Navigator hardware
+claim.
+
+Current BlueOS extension guidance treats an extension as a Docker image plus
+metadata. The image uses Docker labels for version, permissions, authors,
+maintainer/company, readme, links, type, and tags. A UI-capable extension should
+serve a `register_service` endpoint so BlueOS can add it to the sidebar.
+
+Sources:
+
+- [BlueOS extension development](https://blueos.cloud/docs/latest/development/extensions/)
+- [BlueOS Extensions Repository metadata](https://raw.githubusercontent.com/bluerobotics/BlueOS-Extensions-Repository/master/README.md)
+
+## Local Lifecycle Smoke
+
+The local smoke runs the extension container with embedded SemStreams runtime
+and verifies:
+
+- `/api/health`
+- `/register_service`
+
+```bash
+scripts/blueos-extension-smoke.sh
+```
+
+The smoke expects a sibling SemStreams checkout. Override with
+`SEMSTREAMS_ROOT=/path/to/semstreams` when needed.
+
+## Packaging Files
+
+- `docker/blueos-extension/Dockerfile`: BlueOS-style image and labels
+- `docker/blueos-extension/entrypoint.sh`: extension runtime flags
+- `compose.blueos.yml`: local lifecycle Compose target
+- `blueos/extension/metadata.json`: Bazaar repository metadata skeleton
+- `blueos/extension/README.md`: submission note and evidence boundary
+
+## Evidence Boundary
+
+This slice proves that SemLink exposes BlueOS-compatible service registration
+and has an image/lifecycle shape that can be tested locally.
+
+It does not publish to Docker Hub or the BlueOS Bazaar. It also does not access
+Navigator hardware or enable hardware command transmit; those remain separate
+OpenSpec tasks.

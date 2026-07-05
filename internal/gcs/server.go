@@ -8,6 +8,8 @@ import (
 	"os"
 	"path/filepath"
 	"time"
+
+	"github.com/c360studio/semlink/internal/blueos"
 )
 
 type Server struct {
@@ -17,18 +19,24 @@ type Server struct {
 	csapiURL string
 	client   *http.Client
 	static   string
+	blueos   blueos.Registration
 }
 
 type ServerOptions struct {
-	Graph      EntityQuerier
-	CSAPIURL   string
-	HTTPClient *http.Client
+	Graph              EntityQuerier
+	CSAPIURL           string
+	HTTPClient         *http.Client
+	BlueOSRegistration *blueos.Registration
 }
 
 func NewServer(store *Store, commands *CommandService, staticDir string, opts ServerOptions) *Server {
 	client := opts.HTTPClient
 	if client == nil {
 		client = &http.Client{Timeout: 2 * time.Second}
+	}
+	registration := blueos.DefaultRegistration()
+	if opts.BlueOSRegistration != nil {
+		registration = *opts.BlueOSRegistration
 	}
 	return &Server{
 		store:    store,
@@ -37,12 +45,14 @@ func NewServer(store *Store, commands *CommandService, staticDir string, opts Se
 		csapiURL: opts.CSAPIURL,
 		client:   client,
 		static:   staticDir,
+		blueos:   registration,
 	}
 }
 
 func (s *Server) Handler() http.Handler {
 	mux := http.NewServeMux()
 	mux.HandleFunc("/api/health", s.handleHealth)
+	mux.HandleFunc("/register_service", s.handleRegisterService)
 	mux.HandleFunc("/api/snapshot", s.handleSnapshot)
 	mux.HandleFunc("/api/graph", s.handleGraph)
 	mux.HandleFunc("/api/events", s.handleEvents)
@@ -53,6 +63,18 @@ func (s *Server) Handler() http.Handler {
 
 func (s *Server) handleHealth(w http.ResponseWriter, _ *http.Request) {
 	writeJSON(w, map[string]any{"ok": true, "time": time.Now()})
+}
+
+func (s *Server) handleRegisterService(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodGet {
+		http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+	if err := s.blueos.Validate(); err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	writeJSON(w, s.blueos)
 }
 
 func (s *Server) handleSnapshot(w http.ResponseWriter, _ *http.Request) {

@@ -13,7 +13,7 @@
 - [x] 2.2 Add a deterministic multi-boat simulator harness with per-node local
       SemStreams state
 - [x] 2.3 Add ArduRover / ArduPilot SITL telemetry lane without Gazebo
-- [ ] 2.4 Add BlueOS extension packaging skeleton and local lifecycle smoke
+- [x] 2.4 Add BlueOS extension packaging skeleton and local lifecycle smoke
 - [ ] 2.5 Add read-only hardware smoke plan for a single Navigator-class device
 
 ## 3. Mesh Synchronization Slice

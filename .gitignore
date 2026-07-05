@@ -27,9 +27,22 @@ go.work.sum
 # env file
 .env
 
+# OS/local filesystem noise
+.DS_Store
+**/.DS_Store
+._*
+**/._*
+Thumbs.db
+**/Thumbs.db
+Desktop.ini
+**/Desktop.ini
+
 # Editor/IDE
 # .idea/
 # .vscode/
+*.swp
+*.swo
+*~
 
 # SemLink local build artifacts
 /.cache/

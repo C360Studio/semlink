@@ -1,0 +1,21 @@
+services:
+  semlink-blueos-extension:
+    build:
+      context: ${SEMLINK_ROOT:-.}
+      dockerfile: docker/blueos-extension/Dockerfile
+      additional_contexts:
+        semstreams: ${SEMSTREAMS_ROOT:-../semstreams}
+    environment:
+      SEMLINK_EMBEDDED_NATS: "true"
+      SEMLINK_HTTP_LISTEN: ":80"
+      SEMLINK_VEHICLES: "${SEMLINK_VEHICLES:-1}"
+      SEMLINK_HZ: "${SEMLINK_HZ:-5}"
+      SEMLINK_MAVLINK_UDP_LISTEN: "${SEMLINK_MAVLINK_UDP_LISTEN:-}"
+    ports:
+      - "${SEMLINK_BLUEOS_HOST_PORT:-8081}:80"
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q -O - http://127.0.0.1/api/health || exit 1"]
+      interval: 5s
+      timeout: 3s
+      retries: 12
+      start_period: 5s

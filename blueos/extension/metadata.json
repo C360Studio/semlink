@@ -1,0 +1,6 @@
+{
+  "name": "SemLink Companion",
+  "website": "https://github.com/C360Studio/semlink",
+  "docker": "c360studio/semlink-blueos",
+  "description": "MAVLink companion and mesh node for boat-class vehicles."
+}
