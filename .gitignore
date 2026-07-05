@@ -46,6 +46,7 @@ Desktop.ini
 
 # SemLink local build artifacts
 /.cache/
+/.artifacts/
 /ui/node_modules/
 /ui/dist/
 /ui/.svelte-kit/
