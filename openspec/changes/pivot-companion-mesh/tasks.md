@@ -30,7 +30,7 @@
 
 - [x] 4.1 Define local rule evaluation input and trace entity shape
 - [x] 4.2 Add one observe-only swarm coordination rule over mesh-visible state
-- [ ] 4.3 Add simulator-only command preflight gate
+- [x] 4.3 Add simulator-only command preflight gate
 - [ ] 4.4 Add simulator command transmit gate with COMMAND_ACK and post-state
       polling
 - [ ] 4.5 Keep hardware transmit blocked until a separate OpenSpec change
