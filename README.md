@@ -38,6 +38,13 @@ Then inspect:
 - SemLink local API / historical UI: `http://127.0.0.1:8080`
 - SemConnect CS API: `http://127.0.0.1:48080`
 
+The local UI-consumer contract is documented in
+[`docs/evidence-api.md`](docs/evidence-api.md):
+
+```bash
+curl -s http://127.0.0.1:8080/api/evidence
+```
+
 If the script reports a missing SemConnect pinned vendor tree, stage it once:
 
 ```bash

@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/c360studio/semlink/internal/blueos"
+	"github.com/c360studio/semlink/internal/mesh"
 )
 
 type Server struct {
@@ -20,6 +21,8 @@ type Server struct {
 	client   *http.Client
 	static   string
 	blueos   blueos.Registration
+	nodeID   string
+	mesh     *mesh.SummaryIndex
 }
 
 type ServerOptions struct {
@@ -27,6 +30,8 @@ type ServerOptions struct {
 	CSAPIURL           string
 	HTTPClient         *http.Client
 	BlueOSRegistration *blueos.Registration
+	NodeID             string
+	MeshIndex          *mesh.SummaryIndex
 }
 
 func NewServer(store *Store, commands *CommandService, staticDir string, opts ServerOptions) *Server {
@@ -46,6 +51,8 @@ func NewServer(store *Store, commands *CommandService, staticDir string, opts Se
 		client:   client,
 		static:   staticDir,
 		blueos:   registration,
+		nodeID:   opts.NodeID,
+		mesh:     opts.MeshIndex,
 	}
 }
 
@@ -54,6 +61,7 @@ func (s *Server) Handler() http.Handler {
 	mux.HandleFunc("/api/health", s.handleHealth)
 	mux.HandleFunc("/register_service", s.handleRegisterService)
 	mux.HandleFunc("/api/snapshot", s.handleSnapshot)
+	mux.HandleFunc("/api/evidence", s.handleEvidence)
 	mux.HandleFunc("/api/graph", s.handleGraph)
 	mux.HandleFunc("/api/events", s.handleEvents)
 	mux.HandleFunc("/api/commands", s.handleCommands)
@@ -79,6 +87,14 @@ func (s *Server) handleRegisterService(w http.ResponseWriter, r *http.Request) {
 
 func (s *Server) handleSnapshot(w http.ResponseWriter, _ *http.Request) {
 	writeJSON(w, s.store.Snapshot())
+}
+
+func (s *Server) handleEvidence(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodGet {
+		http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+	writeJSON(w, s.EvidenceBundle(time.Now()))
 }
 
 func (s *Server) handleGraph(w http.ResponseWriter, r *http.Request) {

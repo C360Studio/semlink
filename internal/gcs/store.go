@@ -5,19 +5,23 @@ import (
 	"sync"
 	"time"
 
+	"github.com/c360studio/semlink/internal/commandgate"
 	"github.com/c360studio/semlink/internal/cop"
 	"github.com/c360studio/semlink/internal/projector"
+	"github.com/c360studio/semlink/internal/rules"
 )
 
 type Snapshot struct {
-	GeneratedAt time.Time     `json:"generated_at"`
-	Vehicles    []VehicleView `json:"vehicles"`
-	Alerts      []AlertView   `json:"alerts"`
-	Commands    []CommandView `json:"commands"`
-	Operators   []cop.View    `json:"operators"`
-	Markers     []cop.View    `json:"markers"`
-	Messages    []cop.View    `json:"messages"`
-	Metrics     MetricsView   `json:"metrics"`
+	GeneratedAt  time.Time         `json:"generated_at"`
+	Vehicles     []VehicleView     `json:"vehicles"`
+	Alerts       []AlertView       `json:"alerts"`
+	Commands     []CommandView     `json:"commands"`
+	Operators    []cop.View        `json:"operators"`
+	Markers      []cop.View        `json:"markers"`
+	Messages     []cop.View        `json:"messages"`
+	RuleTraces   []RuleTraceView   `json:"rule_traces"`
+	CommandGates []CommandGateView `json:"command_gates"`
+	Metrics      MetricsView       `json:"metrics"`
 }
 
 type VehicleView struct {
@@ -81,15 +85,17 @@ type MetricsView struct {
 }
 
 type Store struct {
-	mu        sync.RWMutex
-	started   time.Time
-	vehicles  map[string]VehicleView
-	alerts    map[string]AlertView
-	commands  []CommandView
-	operators map[string]cop.View
-	markers   map[string]cop.View
-	messages  map[string]cop.View
-	metrics   MetricsView
+	mu           sync.RWMutex
+	started      time.Time
+	vehicles     map[string]VehicleView
+	alerts       map[string]AlertView
+	commands     []CommandView
+	operators    map[string]cop.View
+	markers      map[string]cop.View
+	messages     map[string]cop.View
+	ruleTraces   []RuleTraceView
+	commandGates []CommandGateView
+	metrics      MetricsView
 }
 
 func NewStore(natsURL string, embedded bool) *Store {
@@ -256,6 +262,47 @@ func (s *Store) AddCommand(cmd CommandView) {
 	}
 }
 
+func (s *Store) RecordRuleTrace(trace *rules.TracePayload) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	s.ruleTraces = append([]RuleTraceView{ruleTraceView(trace)}, s.ruleTraces...)
+	if len(s.ruleTraces) > 50 {
+		s.ruleTraces = s.ruleTraces[:50]
+	}
+}
+
+func (s *Store) RecordCommandGateResult(result commandgate.TransmitResult) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	view := CommandGateView{
+		Accepted:          result.Accepted,
+		Status:            result.Status,
+		StartedAt:         result.StartedAt,
+		FrameCount:        len(result.Frames),
+		ACKCount:          len(result.ACKs),
+		PostStateObserved: result.PostState.Observed,
+		HardwareBlock:     result.HardwareBlock,
+	}
+	if result.Preflight.Evidence.TargetEntity != "" {
+		view.RuntimeMode = result.Preflight.Evidence.RuntimeMode
+		view.SafetyProfile = result.Preflight.Evidence.SafetyProfile
+		view.TargetEntity = result.Preflight.Evidence.TargetEntity
+		view.Verb = result.Preflight.Evidence.Verb
+		view.RequestedBy = result.Preflight.Evidence.RequestedBy
+	}
+	if result.HardwareBlock != nil {
+		view.RuntimeMode = result.HardwareBlock.RuntimeMode
+		view.SafetyProfile = result.HardwareBlock.SafetyProfile
+		view.TargetEntity = result.HardwareBlock.TargetEntity
+		view.Verb = result.HardwareBlock.Verb
+		view.RequestedBy = result.HardwareBlock.RequestedBy
+	}
+	s.commandGates = append([]CommandGateView{view}, s.commandGates...)
+	if len(s.commandGates) > 50 {
+		s.commandGates = s.commandGates[:50]
+	}
+}
+
 func (s *Store) Snapshot() Snapshot {
 	s.mu.RLock()
 	defer s.mu.RUnlock()
@@ -277,6 +324,8 @@ func (s *Store) Snapshot() Snapshot {
 	})
 
 	commands := append([]CommandView(nil), s.commands...)
+	ruleTraces := append([]RuleTraceView(nil), s.ruleTraces...)
+	commandGates := append([]CommandGateView(nil), s.commandGates...)
 	operators := make([]cop.View, 0, len(s.operators))
 	for _, operator := range s.operators {
 		operators = append(operators, operator)
@@ -309,13 +358,15 @@ func (s *Store) Snapshot() Snapshot {
 	}
 
 	return Snapshot{
-		GeneratedAt: time.Now(),
-		Vehicles:    vehicles,
-		Alerts:      alerts,
-		Commands:    commands,
-		Operators:   operators,
-		Markers:     markers,
-		Messages:    messages,
-		Metrics:     metrics,
+		GeneratedAt:  time.Now(),
+		Vehicles:     vehicles,
+		Alerts:       alerts,
+		Commands:     commands,
+		Operators:    operators,
+		Markers:      markers,
+		Messages:     messages,
+		RuleTraces:   ruleTraces,
+		CommandGates: commandGates,
+		Metrics:      metrics,
 	}
 }

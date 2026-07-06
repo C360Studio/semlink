@@ -40,7 +40,7 @@
 
 - [x] 5.1 Reframe product, docs, and demo language so SemLink exposes
       CLI/config plus UI-consumable APIs instead of owning SemGCS / GCS glass
-- [ ] 5.2 Add node, vehicle, mesh, rule trace, and command evidence API/evidence
+- [x] 5.2 Add node, vehicle, mesh, rule trace, and command evidence API/evidence
       contracts for SemOps and semstreams-ui consumers
 - [ ] 5.3 Keep SemOps consumption, semstreams-ui ops/debug consumption, and
       SemConnect standards egress optional and downstream

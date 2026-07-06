@@ -45,6 +45,7 @@ npm --prefix ui run build
 
 # Run dev mode: embedded in-process NATS JetStream + graph-ingest, no Docker
 go run ./cmd/semgcs-demo -embedded-nats=true -vehicles=12 -hz=20   # local API / legacy UI at :8080
+curl -s http://127.0.0.1:8080/api/evidence  # external UI evidence contract
 
 # Go tests (pure unit tests with fakes — no Docker needed, but DO need ../semstreams)
 go test ./...
@@ -110,11 +111,12 @@ split is the whole point of the demo — preserve it.
 - **`internal/gcs`** — the historical demo orchestration plus local
   status/evidence API. `demo.go` (the 3 goroutines above), `store.go`
   (thread-safe in-memory snapshot + metrics), `server.go` (HTTP:
-  `/api/snapshot`, `/api/events` SSE, `/api/graph`, `/api/commands`, static
-  legacy UI), `commands.go` (operator intent → control-profiled graph write),
-  `graph_view.go` (the **source-aware graph lens**: builds a SemLink operational
-  lens from the graph + snapshot, and a SemConnect lens by querying the live CS
-  API).
+  `/api/evidence`, `/api/snapshot`, `/api/events` SSE, `/api/graph`,
+  `/api/commands`, static legacy UI), `evidence.go` (versioned bundle for
+  SemOps/semstreams-ui consumers), `commands.go` (operator intent →
+  control-profiled graph write), `graph_view.go` (the **source-aware graph
+  lens**: builds a SemLink operational lens from the graph + snapshot, and a
+  SemConnect lens by querying the live CS API).
 - **`internal/csapi`** — optional downstream `Bridge`. Polls the store snapshot and POSTs a
   decimated standards view to SemConnect: Systems, Datastreams, Observations (OM-JSON),
   SystemEvents, ControlStreams, Commands. Tracks what it has already posted to stay

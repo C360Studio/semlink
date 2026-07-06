@@ -92,6 +92,12 @@ curl -s http://127.0.0.1:48080/commands
 curl -s 'http://127.0.0.1:8080/api/graph?vehicle_id=c360.semlink.robotics.fleet.drone.uav-001'
 ```
 
+12. Query the external UI evidence contract:
+
+```bash
+curl -s http://127.0.0.1:8080/api/evidence
+```
+
 ## Teardown
 
 ```bash
