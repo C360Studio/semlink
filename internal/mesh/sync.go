@@ -32,8 +32,8 @@ type WatermarkSet struct {
 }
 
 type DiffOptions struct {
-	Now      time.Time
-	MaxItems int
+	Now      time.Time `json:"now,omitempty"`
+	MaxItems int       `json:"max_items,omitempty"`
 }
 
 type Diff struct {
