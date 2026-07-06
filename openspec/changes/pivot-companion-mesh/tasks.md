@@ -36,11 +36,13 @@
 - [x] 4.5 Keep hardware transmit blocked until a separate OpenSpec change
       defines authorization and safety evidence
 
-## 5. Operator Experience And Egress
+## 5. Operator API And Egress
 
-- [ ] 5.1 Reframe UI language from SemGCS toward companion / mesh operations
-- [ ] 5.2 Add node, vehicle, mesh, rule trace, and command evidence views
-- [ ] 5.3 Keep SemOps consumption and SemConnect standards egress optional and
-      downstream
+- [ ] 5.1 Reframe product, docs, and demo language so SemLink exposes
+      CLI/config plus UI-consumable APIs instead of owning SemGCS / GCS glass
+- [ ] 5.2 Add node, vehicle, mesh, rule trace, and command evidence API/evidence
+      contracts for SemOps and semstreams-ui consumers
+- [ ] 5.3 Keep SemOps consumption, semstreams-ui ops/debug consumption, and
+      SemConnect standards egress optional and downstream
 - [ ] 5.4 Validate the final slice with docs, unit tests, integration harness,
       and demo-script updates

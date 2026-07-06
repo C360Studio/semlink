@@ -13,7 +13,7 @@ vehicle context.
   runtime
 - **WHEN** peer links are absent
 - **THEN** the node continues to decode MAVLink, update current state, emit
-  alerts, evaluate local rules, and serve local operator evidence
+  alerts, evaluate local rules, and serve local status/evidence APIs
 
 ### Requirement: Bounded Raw MAVLink Lane
 
@@ -37,7 +37,7 @@ before hardware claims.
 - **GIVEN** no Navigator hardware is attached
 - **WHEN** the multi-node companion demo runs
 - **THEN** deterministic simulated boats can prove local state, mesh catch-up,
-  rule traces, and UI evidence
+  rule traces, and UI-consumable evidence
 
 #### Scenario: Autopilot wire behavior is tested
 

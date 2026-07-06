@@ -12,8 +12,8 @@ behavior.
 - **WHEN** architecture, tickets, specs, or implementation decide where
   vehicle-local MAVLink companion behavior belongs
 - **THEN** SemLink owns companion runtime behavior, MAVLink ingress, local state,
-  local rules, mesh summaries, command-intent evidence, and compact operator
-  views
+  local rules, mesh summaries, command-intent evidence, CLI/config surfaces, and
+  UI-consumable local status/evidence APIs
 - **AND** SemOps owns broad COP and fusion product behavior
 - **AND** SemConnect owns standards-facing CS API bridge and conformance claims
 
@@ -34,6 +34,28 @@ SemLink MUST NOT absorb the broad COP / fusion product surface.
   behavior, scenario orchestration, or multi-source operational fusion
 - **THEN** the work is routed to SemOps unless a new OpenSpec change explicitly
   reassigns that product boundary
+
+### Requirement: SemLink Provides UI-Consumable APIs, Not Owned Glass
+
+SemLink SHALL expose companion, mesh, rule, and command evidence for external UI
+consumers without growing a repo-owned GCS or dashboard as the forward product.
+
+#### Scenario: External glass needs companion state
+
+- **WHEN** SemOps, semstreams-ui, or another external operator surface needs
+  SemLink state
+- **THEN** SemLink provides local API, trace, semantic evidence, and CLI/config
+  contracts for node status, vehicle status, mesh peers, rule decisions, command
+  gate outcomes, and health
+- **AND** SemLink does not require those consumers to embed or depend on a
+  SemLink-owned Svelte application
+
+#### Scenario: New dashboard behavior is proposed
+
+- **WHEN** a feature would add SemLink-owned GCS screens, dashboards, or broad
+  operator workflows
+- **THEN** the work is routed to SemOps or a later OpenSpec change unless it is
+  only a temporary demo/debug view with explicit retirement criteria
 
 ### Requirement: SemStreams Remains The Substrate
 

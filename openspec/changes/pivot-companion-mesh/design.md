@@ -43,6 +43,15 @@ The first proof path uses deterministic multi-boat simulation and ArduPilot SITL
 without Gazebo. Gazebo and physical Navigator hardware are later fidelity lanes,
 not prerequisites for proving mesh behavior.
 
+### Expose API And Evidence, Not Owned Glass
+
+SemLink should remain useful to UI products without becoming one. The forward
+operator surface is CLI/config for local setup plus UI-consumable local APIs,
+rule traces, command evidence, mesh status, and SemStreams-backed semantic
+evidence. SemOps owns GCS/COP glass. semstreams-ui can provide generic
+ops/debug views. SemLink-owned Svelte screens stay historical demo prior art
+unless a later OpenSpec change explicitly reopens that product boundary.
+
 ### Fail Closed On Commands
 
 Rules are observe-only by default. Simulator command transmit requires explicit
@@ -60,6 +69,8 @@ are real.
 6. Add ArduPilot SITL lane without Gazebo.
 7. Add simulator-only command gate.
 8. Add BlueOS extension packaging and read-only hardware smoke.
+9. Reframe operator experience as API/evidence/CLI/config surfaces for external
+   UI consumers.
 
 ## Open Questions
 
@@ -73,3 +84,5 @@ are real.
   stay repo-local until duplication pressure is proven?
 - Which ArduPilot frame best models the first boat demo: Rover, skid-steer
   rover, sailboat, or a boat-specific fixture?
+- Which external consumer should be the first contract target for the local
+  status/evidence API: SemOps, semstreams-ui, or a small CLI-driven demo?

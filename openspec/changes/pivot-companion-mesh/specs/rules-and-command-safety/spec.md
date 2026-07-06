@@ -13,7 +13,8 @@ mesh-visible state.
 - **WHEN** the rule fires
 - **THEN** SemLink records input facts, decision, suggested action, execution
   posture, and timestamp as rule trace evidence
-- **AND** the trace is visible to the operator surface
+- **AND** the trace is available through local evidence APIs and semantic
+  evidence for external operator surfaces
 
 ### Requirement: Rules Are Observe-Only By Default
 

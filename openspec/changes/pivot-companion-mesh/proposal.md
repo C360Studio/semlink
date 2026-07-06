@@ -3,7 +3,8 @@
 SemLink has proved the first SemGCS demo shape: bounded raw MAVLink, current
 state projection, alerts, command intent entities, a Svelte operator UI,
 SemConnect egress, and TAK / CoT bridge work. SemOps has now been revived as the
-complete COP and fusion product, so SemLink can become more focused.
+complete COP and fusion product, and semstreams-ui can cover generic
+ops/debug views, so SemLink can become more focused.
 
 The next credible demo is a MAVLink companion node for boat-class vehicles:
 BlueOS on Raspberry Pi class hardware, Navigator-style I/O, ArduRover / boat
@@ -26,6 +27,9 @@ merge-policy envelope.
 - Define SemLink as a vehicle-local MAVLink companion and mesh node.
 - Keep SemOps as the COP / fusion owner and SemConnect as optional standards
   egress.
+- Retire SemLink-owned GCS / dashboard growth in favor of CLI/config surfaces
+  and UI-consumable local APIs, traces, and semantic evidence for external
+  glass.
 - Require bounded delta-state mesh synchronization instead of full snapshots or
   unbounded ledgers.
 - Require deterministic simulator/SITL gates before hardware claims.
@@ -49,8 +53,8 @@ merge-policy envelope.
 
 ### Modified Capabilities
 
-- The old SemGCS demo becomes historical implementation baseline and prior art,
-  not the forward product definition.
+- The old SemGCS demo and Svelte UI become historical implementation baseline
+  and prior art, not the forward product definition.
 - TAK / CoT bridge work remains valid as an adapter, but no longer implies
   SemLink owns the broad COP identity.
 
@@ -60,5 +64,6 @@ merge-policy envelope.
 - `tickets/FEAT-002.yaml`
 - future MAVLink parser/UDP/SITL code reuse from SemOps
 - future simulator and mesh harness packages
-- future Svelte operator UI language and workflows
+- future CLI/config, API, trace, and evidence contracts for external UI
+  consumers
 - future SemStreams tag adoption as upstream substrate releases advance
