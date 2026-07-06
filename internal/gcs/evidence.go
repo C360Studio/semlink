@@ -19,6 +19,7 @@ type EvidenceBundle struct {
 	Contract    EvidenceContract  `json:"contract"`
 	GeneratedAt time.Time         `json:"generated_at"`
 	Node        NodeEvidence      `json:"node"`
+	Downstream  []DownstreamView  `json:"downstream"`
 	Vehicles    []VehicleEvidence `json:"vehicles"`
 	Mesh        MeshEvidence      `json:"mesh"`
 	RuleTraces  []RuleTraceView   `json:"rule_traces"`
@@ -45,6 +46,21 @@ type NodeEvidence struct {
 	GraphWrites        int64     `json:"graph_writes"`
 	GraphErrors        int64     `json:"graph_errors"`
 	BufferDrops        int64     `json:"buffer_drops"`
+}
+
+type DownstreamView struct {
+	Name       string   `json:"name"`
+	Owner      string   `json:"owner"`
+	Role       string   `json:"role"`
+	Optional   bool     `json:"optional"`
+	Direction  string   `json:"direction"`
+	Enabled    bool     `json:"enabled"`
+	Status     string   `json:"status"`
+	APIPaths   []string `json:"api_paths,omitempty"`
+	TargetURL  string   `json:"target_url,omitempty"`
+	Boundary   string   `json:"boundary"`
+	NoRawMesh  bool     `json:"no_raw_mesh,omitempty"`
+	NoGCSGlass bool     `json:"no_gcs_glass,omitempty"`
 }
 
 type VehicleEvidence struct {
@@ -123,6 +139,7 @@ func (s *Server) EvidenceBundle(now time.Time) EvidenceBundle {
 		Contract:    defaultEvidenceContract(),
 		GeneratedAt: now,
 		Node:        nodeEvidence(s.nodeID, snapshot.Metrics, now),
+		Downstream:  downstreamViews(s.csapiURL),
 		Vehicles:    vehicleEvidence(snapshot.Vehicles),
 		Mesh:        s.meshEvidence(now),
 		RuleTraces:  snapshot.RuleTraces,
@@ -145,6 +162,54 @@ func defaultEvidenceContract() EvidenceContract {
 			"graph_lens": "/api/graph?entity_id={entity_id}",
 			"events":     "/api/events",
 			"commands":   "/api/commands",
+		},
+	}
+}
+
+func downstreamViews(csapiURL string) []DownstreamView {
+	csapiURL = strings.TrimSpace(csapiURL)
+	semconnectStatus := "disabled"
+	semconnectEnabled := false
+	if csapiURL != "" {
+		semconnectStatus = "configured"
+		semconnectEnabled = true
+	}
+	return []DownstreamView{
+		{
+			Name:       "semops",
+			Owner:      "SemOps",
+			Role:       "GCS/COP glass and fusion",
+			Optional:   true,
+			Direction:  "pull-local-api",
+			Enabled:    true,
+			Status:     "available",
+			APIPaths:   []string{"/api/evidence", "/api/events", "/api/graph?entity_id={entity_id}"},
+			Boundary:   "SemOps consumes companion evidence; SemLink does not own COP/GCS glass.",
+			NoGCSGlass: true,
+		},
+		{
+			Name:       "semstreams-ui",
+			Owner:      "semstreams-ui",
+			Role:       "generic ops/debug view",
+			Optional:   true,
+			Direction:  "pull-local-api",
+			Enabled:    true,
+			Status:     "available",
+			APIPaths:   []string{"/api/evidence", "/api/snapshot", "/api/graph?entity_id={entity_id}"},
+			Boundary:   "semstreams-ui can inspect evidence without becoming a SemLink dependency.",
+			NoGCSGlass: true,
+		},
+		{
+			Name:      "semconnect-csapi",
+			Owner:     "SemConnect",
+			Role:      "OGC API - Connected Systems standards egress",
+			Optional:  true,
+			Direction: "egress-http",
+			Enabled:   semconnectEnabled,
+			Status:    semconnectStatus,
+			TargetURL: csapiURL,
+			Boundary:  "Curated low-rate standards projection only; not mesh sync and not raw MAVLink.",
+			NoRawMesh: true,
 		},
 	}
 }

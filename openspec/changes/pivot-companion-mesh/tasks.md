@@ -42,7 +42,7 @@
       CLI/config plus UI-consumable APIs instead of owning SemGCS / GCS glass
 - [x] 5.2 Add node, vehicle, mesh, rule trace, and command evidence API/evidence
       contracts for SemOps and semstreams-ui consumers
-- [ ] 5.3 Keep SemOps consumption, semstreams-ui ops/debug consumption, and
+- [x] 5.3 Keep SemOps consumption, semstreams-ui ops/debug consumption, and
       SemConnect standards egress optional and downstream
 - [ ] 5.4 Validate the final slice with docs, unit tests, integration harness,
       and demo-script updates

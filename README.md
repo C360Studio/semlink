@@ -45,6 +45,9 @@ The local UI-consumer contract is documented in
 curl -s http://127.0.0.1:8080/api/evidence
 ```
 
+The evidence bundle includes downstream metadata for SemOps, semstreams-ui, and
+the optional SemConnect CS API bridge.
+
 If the script reports a missing SemConnect pinned vendor tree, stage it once:
 
 ```bash

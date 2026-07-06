@@ -98,6 +98,9 @@ curl -s 'http://127.0.0.1:8080/api/graph?vehicle_id=c360.semlink.robotics.fleet.
 curl -s http://127.0.0.1:8080/api/evidence
 ```
 
+Confirm that the `downstream` section marks SemOps and semstreams-ui as optional
+pull consumers, and SemConnect as optional standards egress.
+
 ## Teardown
 
 ```bash
