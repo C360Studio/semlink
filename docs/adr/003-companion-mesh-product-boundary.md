@@ -56,14 +56,19 @@ SemLink owns:
 - bounded raw telemetry lanes
 - local rule evaluation over vehicle state and mesh-visible peer state
 - an intermittent mesh replication protocol for selected semantic state
-- a compact operator UI for node, vehicle, mesh, rule, and command evidence
+- CLI/config shape plus local status/evidence APIs for node, vehicle, mesh,
+  rule, and command evidence
 
 SemOps owns:
 
 - kitchen-sink COP / fusion UX
+- GCS / operator glass
 - cross-feed assimilation and richer operational dashboards
 - multi-source correlation beyond the boat-local mesh
 - campaign-scale or incident-scale workflows
+
+semstreams-ui may consume SemLink evidence for generic ops/debug views, but
+SemLink does not own a forward dashboard product.
 
 SemStreams owns:
 
@@ -189,7 +194,8 @@ semantic state.
 The old SemGCS demo remains useful. It already proves bounded raw telemetry,
 current-state projection, alerts, command intent entities, a Svelte operator UI,
 SemConnect egress, and TAK / CoT bridge work. The next work should refactor and
-extend those pieces toward companion / mesh operations rather than discard them.
+extend those pieces toward companion / mesh APIs, CLI/config, and external UI
+consumption rather than grow a SemLink-owned GCS.
 
 SemStreams index fixes should be adopted when the next tag lands, but they do
 not remove the need for explicit mesh causality metadata in SemLink.

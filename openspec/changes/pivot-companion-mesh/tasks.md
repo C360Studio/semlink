@@ -38,7 +38,7 @@
 
 ## 5. Operator API And Egress
 
-- [ ] 5.1 Reframe product, docs, and demo language so SemLink exposes
+- [x] 5.1 Reframe product, docs, and demo language so SemLink exposes
       CLI/config plus UI-consumable APIs instead of owning SemGCS / GCS glass
 - [ ] 5.2 Add node, vehicle, mesh, rule trace, and command evidence API/evidence
       contracts for SemOps and semstreams-ui consumers

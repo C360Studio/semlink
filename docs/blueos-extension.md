@@ -6,8 +6,9 @@ claim.
 
 Current BlueOS extension guidance treats an extension as a Docker image plus
 metadata. The image uses Docker labels for version, permissions, authors,
-maintainer/company, readme, links, type, and tags. A UI-capable extension should
-serve a `register_service` endpoint so BlueOS can add it to the sidebar.
+maintainer/company, readme, links, type, and tags. SemLink uses
+`register_service` for BlueOS discoverability, while the forward product surface
+remains local APIs and CLI/config rather than a repo-owned dashboard.
 
 Sources:
 

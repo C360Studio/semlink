@@ -4,24 +4,27 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## What This Is
 
-SemLink is currently a **SemStreams-consuming ground-control (GCS) demo** for a
-simulated UAV swarm. It proves that high-volume MAVLink telemetry can be handled
-with a semantic control plane without making the substrate own robotics
-concerns. The single binary (`cmd/semgcs-demo`) runs the simulator, decoder,
-projector, an in-memory store, and an HTTP server that serves the Svelte
-dashboard and a JSON/SSE API.
+SemLink is pivoting from an implemented **SemStreams-consuming ground-control
+(GCS) demo** into a MAVLink companion mesh service. The historical demo proves
+that high-volume MAVLink telemetry can be handled with a semantic control plane
+without making the substrate own robotics concerns. The current single binary
+(`cmd/semgcs-demo`) still runs the simulator, decoder, projector, an in-memory
+store, and an HTTP server that serves a JSON/SSE API plus the historical Svelte
+dashboard.
 
 The forward product boundary is ADR 003:
 `docs/adr/003-companion-mesh-product-boundary.md`. ADR 001 remains historical
 context for the implemented SemGCS demo.
 
 - **SemLink owns** MAVLink decoding, source adapters, vehicle-local companion
-  service behavior, local rules, mesh-visible current-state summaries, operator
-  command vocabulary, and the robotics semantic predicates.
+  service behavior, local rules, mesh-visible current-state summaries,
+  CLI/config shape, local status/evidence APIs, command vocabulary, and the
+  robotics semantic predicates.
 - **SemStreams owns** the substrate: NATS/JetStream, the `graph-ingest` processor,
   `ENTITY_STATES`, mutation/query subjects, projection-ownership contracts, and indexing
   profiles. SemLink only *writes through* it.
-- **SemOps** owns the kitchen-sink COP / fusion product surface.
+- **SemOps** owns the kitchen-sink COP / fusion product surface and GCS glass.
+- **semstreams-ui** can consume SemLink evidence for generic ops/debug views.
 - **SemConnect** (optional, downstream) receives a curated, decimated OGC Connected
   Systems (CS API) view over HTTP. Raw MAVLink never flows through SemConnect.
 
@@ -36,23 +39,23 @@ also needs a sibling `../semconnect`. Override locations with `SEMSTREAMS_ROOT` 
 ## Commands
 
 ```bash
-# Build the UI (required before running the Go server; it serves ui/dist as static)
+# Build the historical UI (currently required before running the Go server; it serves ui/dist as static)
 npm --prefix ui install
 npm --prefix ui run build
 
 # Run dev mode: embedded in-process NATS JetStream + graph-ingest, no Docker
-go run ./cmd/semgcs-demo -embedded-nats=true -vehicles=12 -hz=20   # UI at http://127.0.0.1:8080
+go run ./cmd/semgcs-demo -embedded-nats=true -vehicles=12 -hz=20   # local API / legacy UI at :8080
 
 # Go tests (pure unit tests with fakes — no Docker needed, but DO need ../semstreams)
 go test ./...
 go test ./internal/projector -run TestProjectorCollapsesRawMessagesToCurrentVehicleEntity
 
-# UI type/lint check, and a hot-reloading UI dev server (proxies /api to :8080)
+# Historical UI type/lint check, and a hot-reloading UI dev server (proxies /api to :8080)
 npm --prefix ui run check
 npm --prefix ui run dev   # Vite at :5173
 
 # Full two-stack demo via Docker Compose (needs ../semconnect, ../semstreams, Docker)
-./scripts/demo-up.sh      # SemLink UI :8080, SemConnect CS API :48080
+./scripts/demo-up.sh      # SemLink local API / legacy UI :8080, SemConnect CS API :48080
 ./scripts/demo-down.sh
 
 # OpenSpec governance for product-boundary or contract-sized changes
@@ -75,7 +78,8 @@ mavlink.Simulator (sim.go)            internal/gcs/demo.go owns the goroutines:
   -> projector.Projection (entity+triples+profile)
   -> semstreams.GraphClient.UpsertProjection
        -> graph.ingest mutation subjects (create_with_triples / update_with_triples)
-  -> gcs.Store (in-memory snapshot)  -> HTTP /api/snapshot + /api/events (SSE)  -> Svelte UI
+  -> gcs.Store (in-memory snapshot)  -> HTTP /api/snapshot + /api/events (SSE)
+                                      -> historical Svelte UI / external consumers
   -> (optional) csapi.Bridge          -> decimated CS API POSTs to SemConnect
 ```
 
@@ -103,18 +107,21 @@ split is the whole point of the demo — preserve it.
   NATS (ephemeral port `-1`), ensures KV buckets + streams, and starts the `graph-ingest`
   processor in-process. `client.go`'s `GraphClient.UpsertProjection` does create→update
   fallback over request/reply, caching known entity IDs.
-- **`internal/gcs`** — the demo orchestration and operator surface. `demo.go` (the 3
-  goroutines above), `store.go` (thread-safe in-memory snapshot + metrics, the UI's source
-  of truth), `server.go` (HTTP: `/api/snapshot`, `/api/events` SSE, `/api/graph`,
-  `/api/commands`, static UI), `commands.go` (operator intent → control-profiled graph
-  write), `graph_view.go` (the **source-aware graph lens**: builds a SemLink operational
-  lens from the graph + snapshot, and a SemConnect lens by querying the live CS API).
+- **`internal/gcs`** — the historical demo orchestration plus local
+  status/evidence API. `demo.go` (the 3 goroutines above), `store.go`
+  (thread-safe in-memory snapshot + metrics), `server.go` (HTTP:
+  `/api/snapshot`, `/api/events` SSE, `/api/graph`, `/api/commands`, static
+  legacy UI), `commands.go` (operator intent → control-profiled graph write),
+  `graph_view.go` (the **source-aware graph lens**: builds a SemLink operational
+  lens from the graph + snapshot, and a SemConnect lens by querying the live CS
+  API).
 - **`internal/csapi`** — optional downstream `Bridge`. Polls the store snapshot and POSTs a
   decimated standards view to SemConnect: Systems, Datastreams, Observations (OM-JSON),
   SystemEvents, ControlStreams, Commands. Tracks what it has already posted to stay
   idempotent.
-- **`ui/`** — Svelte 5 (runes: `$state`/`$derived`/`$effect`) + Vite + TypeScript dashboard.
-  Consumes the JSON/SSE API; built to `ui/dist` and served statically by the Go server.
+- **`ui/`** — historical Svelte 5 (runes: `$state`/`$derived`/`$effect`) + Vite
+  + TypeScript dashboard. It consumes the JSON/SSE API; built to `ui/dist` and
+  served statically by the Go server until the demo UI is retired.
 
 ## Conventions & Gotchas
 

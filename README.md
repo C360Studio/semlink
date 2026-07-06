@@ -1,20 +1,29 @@
 # SemLink
 
-SemLink is currently a SemStreams-consuming ground-control demo. The forward direction is a MAVLink companion
-mesh service for vehicle-local state, local rules, and intermittent peer replication. ADR 003 is the forward
-product boundary; ADR 001 remains the historical boundary for the implemented SemGCS demo.
+SemLink is pivoting from the implemented SemGCS ground-control demo into a
+SemStreams-consuming MAVLink companion mesh service for vehicle-local state,
+local rules, and intermittent peer replication. ADR 003 is the forward product
+boundary; ADR 001 remains the historical boundary for the implemented SemGCS
+demo.
 
-SemLink owns MAVLink decoding, simulator/replay adapters, operator UX, and robotics language. SemStreams owns
-the semantic substrate: NATS/JetStream, graph-ingest, `ENTITY_STATES`, mutation/query subjects, projection
-contracts, and indexing-profile policy.
+SemLink owns MAVLink decoding, simulator/replay adapters, companion runtime,
+CLI/config shape, local status/evidence APIs, and robotics language. SemOps
+owns broad GCS/COP glass. semstreams-ui can provide generic ops/debug views.
+SemStreams owns the semantic substrate: NATS/JetStream, graph-ingest,
+`ENTITY_STATES`, mutation/query subjects, projection contracts, and
+indexing-profile policy.
 
 ## Run The Demo
 
-The full demo uses Docker Compose and keeps two NATS/SemStreams stacks:
+The current legacy demo uses Docker Compose and keeps two NATS/SemStreams
+stacks:
 
-- SemLink stack: raw MAVLink stream, current-state graph, alerts, command intent, and operator UI.
-- SemConnect stack: CS API Systems, Datastreams, Observations, SystemEvents, and Commands.
-- HTTP bridge: curated, decimated standards projection from SemLink into SemConnect.
+- SemLink stack: raw MAVLink stream, current-state graph, alerts, command
+  intent, local JSON/SSE APIs, and the historical Svelte demo UI.
+- SemConnect stack: CS API Systems, Datastreams, Observations, SystemEvents,
+  and Commands.
+- HTTP bridge: curated, decimated standards projection from SemLink into
+  SemConnect.
 
 For now, SemLink layers its services on top of SemConnect's conformance Compose
 file and builds against a sibling SemStreams checkout. Clone `semconnect` and
@@ -24,9 +33,9 @@ file and builds against a sibling SemStreams checkout. Clone `semconnect` and
 ./scripts/demo-up.sh
 ```
 
-Then open:
+Then inspect:
 
-- SemLink UI: `http://127.0.0.1:8080`
+- SemLink local API / historical UI: `http://127.0.0.1:8080`
 - SemConnect CS API: `http://127.0.0.1:48080`
 
 If the script reports a missing SemConnect pinned vendor tree, stage it once:
@@ -73,13 +82,16 @@ host ports for non-empty listen addresses; override them with the matching
 
 For the first demo, keep SemLink and SemConnect on separate NATS/SemStreams
 stacks and connect them only through the CS API HTTP bridge. That makes the
-boundary obvious: SemLink owns MAVLink, operator state, raw telemetry streams,
-and command intent; SemConnect owns the standards-facing CS API view.
+boundary obvious: SemLink owns MAVLink, companion state, raw telemetry streams,
+rule/command evidence, and local API contracts; SemConnect owns the
+standards-facing CS API view.
 
 ## Developer Mode
 
 For quick SemLink-only work, run without Docker Compose. This starts embedded
-NATS JetStream and the SemStreams graph-ingest component in-process:
+NATS JetStream and the SemStreams graph-ingest component in-process. The
+current binary still serves the historical Svelte UI, so build `ui/dist` until
+that demo surface is retired:
 
 ```bash
 npm --prefix ui install
@@ -87,17 +99,18 @@ npm --prefix ui run build
 go run ./cmd/semgcs-demo -embedded-nats=true -vehicles=12 -hz=20
 ```
 
-Then open `http://127.0.0.1:8080`. A shared NATS topology is a later
-integration mode and should run one deliberate owner for each SemStreams graph
-processor.
+Then use `http://127.0.0.1:8080` for the local API and historical UI. A shared
+NATS topology is a later integration mode and should run one deliberate owner
+for each SemStreams graph processor.
 
-The demo uses a simulated MAVLink-like feed, but the frames are real unsigned MAVLink 2 envelopes for the subset we
-support now: `HEARTBEAT`, `SYS_STATUS`, and `GLOBAL_POSITION_INT`. It does not use MAVSDK.
+The demo uses a simulated MAVLink-like feed, but the frames are real unsigned
+MAVLink 2 envelopes for the subset we support now: `HEARTBEAT`, `SYS_STATUS`,
+and `GLOBAL_POSITION_INT`. It does not use MAVSDK.
 
 ## Spec Workflow
 
-Product-boundary, mesh protocol, command-transmit, and SemStreams contract changes
-use OpenSpec before implementation. The active pivot is tracked under
+Product-boundary, mesh protocol, command-transmit, and SemStreams contract
+changes use OpenSpec before implementation. The active pivot is tracked under
 `openspec/changes/pivot-companion-mesh/`.
 
 ```bash
@@ -114,12 +127,14 @@ sim/PX4 adapter
   -> internal/projector current-state projection
   -> SemStreams graph.mutation.entity.create_with_triples / update_with_triples
   -> SemStreams graph.ingest.query.entity
-  -> Svelte GCS dashboard
+  -> local JSON/SSE status and evidence APIs
+  -> optional historical Svelte demo UI
   -> optional SemConnect CS API bridge
 ```
 
-High-volume telemetry is not modeled as one graph entity per raw frame. Raw frames stay on a bounded stream lane,
-while current vehicle state is projected into one signal-profiled graph entity per vehicle. Alerts and command intents
+High-volume telemetry is not modeled as one graph entity per raw frame. Raw
+frames stay on a bounded stream lane, while current vehicle state is projected
+into one signal-profiled graph entity per vehicle. Alerts and command intents
 are control-profiled graph entities.
 
 The optional CS API bridge publishes a curated, low-rate standards view:
@@ -141,15 +156,19 @@ operator positions, markers, and observed GeoChat land as governed `cop.*`
 graph entities and are included in the CS API bridge when `-csapi-url` is
 enabled.
 
-The dashboard includes a source-aware graph lens for the selected vehicle or
-TAK COP entity: `SemLink Graph` shows the operational SemStreams state, while
-`SemConnect Projection` shows the downstream CS API materialization when
-`-csapi-url` is enabled.
+The local API and historical dashboard include a source-aware graph lens for the
+selected vehicle or TAK COP entity: `SemLink Graph` shows the operational
+SemStreams state, while `SemConnect Projection` shows the downstream CS API
+materialization when `-csapi-url` is enabled.
 
 ## Roadmap
 
-The next product slice is the ADR 003 companion-mesh pivot: several boat-local SemLink nodes, each with a local
-MAVLink feed and local SemStreams state, exchanging selected current-state summaries over an unreliable mesh harness.
-ArduRover / ArduPilot SITL without Gazebo should be the first autopilot fidelity lane; PX4 and Gazebo remain useful
-later lanes when the claim needs them. The adapter boundary is `internal/mavlink.RawFrame`; no MAVSDK or equivalent
-vehicle SDK is planned for this surface.
+The next product slice is the ADR 003 companion-mesh pivot: several boat-local
+SemLink nodes, each with a local MAVLink feed and local SemStreams state,
+exchanging selected current-state summaries over an unreliable mesh harness.
+SemLink should expose those facts through CLI/config and UI-consumable APIs for
+SemOps or semstreams-ui, not grow its own GCS glass. ArduRover / ArduPilot SITL
+without Gazebo should be the first autopilot fidelity lane; PX4 and Gazebo
+remain useful later lanes when the claim needs them. The adapter boundary is
+`internal/mavlink.RawFrame`; no MAVSDK or equivalent vehicle SDK is planned for
+this surface.

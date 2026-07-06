@@ -5,21 +5,33 @@ depends_on:
   - FEAT-001
 blocks: []
 status: proposed
-reviewer: architect,go-developer,go-reviewer,svelte-developer,svelte-reviewer,technical-writer
+reviewer: architect,go-developer,go-reviewer,technical-writer
 scope:
   - Implement ADR 003 as the forward SemLink product boundary
   - Shape SemLink as a BlueOS/Navigator-style MAVLink companion service
-  - Reuse or port SemOps MAVLink parser, UDP, SITL, replay, and command-gate prior art
-  - Add a deterministic multi-boat simulator and/or ArduRover SITL lane without Gazebo
+  - >-
+    Expose CLI/config and UI-consumable local status/evidence APIs instead of
+    growing SemLink-owned GCS glass
+  - Reuse or port SemOps MAVLink parser, UDP, SITL, replay, and command-gate
+    prior art
+  - Add a deterministic multi-boat simulator and/or ArduRover SITL lane without
+    Gazebo
   - Add bounded mesh sync with per-origin watermarks, TTLs, and explicit merge policy
   - Add local rule evaluation over mesh-visible state with traceable decisions
-  - Keep SemOps as COP/fusion consumer and SemConnect as optional standards egress
+  - >-
+    Keep SemOps as COP/fusion/GCS consumer, semstreams-ui as optional ops/debug
+    consumer, and SemConnect as optional standards egress
 acceptance:
-  - N local SemLink nodes exchange current-state summaries over an unreliable-link harness
+  - N local SemLink nodes exchange current-state summaries over an
+    unreliable-link harness
   - A rejoining node catches up without a full graph snapshot or unbounded event ledger
   - A rule trace proves at least one swarm coordination behavior without hardware
   - Simulator command transmit is safety-gated, ACK-observed, and post-state-polled
-  - No hardware transmit path exists before explicit hardware safety and authorization gates
+  - No hardware transmit path exists before explicit hardware safety and
+    authorization gates
+  - >-
+    SemLink-owned dashboard growth is out of scope; external UI consumers use
+    documented local APIs/evidence
 notes:
   - Wait for the next SemStreams tag if the predicate-index fixes are needed for the demo
   - Do not treat SemStreams KVRevision as distributed causality metadata

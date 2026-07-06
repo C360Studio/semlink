@@ -198,7 +198,8 @@ standards-consumer path.
 Phase 0 is cheap and independent: it reuses the store and the `csapi` bridge pattern and needs no new domain or
 projection code, so outbound-first carries the least risk and the highest demo value. It preserves the
 adapter/substrate/standards split from ADR 001, now carried forward by ADR 003: SemLink owns protocol adapters and
-operator UX, SemStreams owns the substrate, SemConnect owns the standards view. TAK becomes just another adapter family.
+local evidence APIs, SemStreams owns the substrate, SemConnect owns the standards view, and SemOps owns broad operator
+glass. TAK becomes just another adapter family.
 
 Phase 1 carries named, non-optional prerequisites that earlier drafts understated: the `graphprojection` extraction
 (because the reusable helpers are unexported and MAVLink-entangled today), `cop` ownership/contracts/profiles plus
@@ -213,7 +214,8 @@ velocity mismatch — the trade ADR 001 already accepted for MAVLink. The clean-
 convenience and forbids studying `goatak`'s structure, but is required by its AGPL license.
 
 The former UI rebrand question is closed by ADR 003: SemLink language should move toward companion / mesh operations,
-not a broad COP identity. The `cop.*` domain naming is already adopted above for TAK / CoT entities.
+CLI/config, and external UI consumption, not a broad COP identity. The `cop.*` domain naming is already adopted above
+for TAK / CoT entities.
 
 ## Open questions
 
@@ -221,5 +223,6 @@ not a broad COP identity. The `cop.*` domain naming is already adopted above for
   wire vectors to test against (resolves the clean-room source question concretely).
 - **SemConnect resource support:** verify CS API serving of Sampling Features, System Events, and mobile Systems before
   Phase 1 (decides SemLink-only vs SemConnect issue).
-- **UI rebrand:** superseded by ADR 003. Future SemLink UI language should move
-  toward companion / mesh operations, while SemOps owns the broader COP identity.
+- **UI rebrand:** superseded by ADR 003. Future SemLink operator-surface
+  language should move toward companion / mesh APIs and external UI consumption,
+  while SemOps owns the broader COP identity.

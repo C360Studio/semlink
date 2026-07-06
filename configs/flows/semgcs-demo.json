@@ -1,7 +1,7 @@
 {
   "id": "semgcs-demo",
-  "name": "SemGCS telemetry control-plane demo",
-  "description": "SemStreams graph-ingest demo; raw MAVLink stays on MAVLINK_RAW, projections land in ENTITY_STATES.",
+  "name": "SemLink companion evidence demo",
+  "description": "Legacy SemGCS flow; MAVLink stays on MAVLINK_RAW, projections land in ENTITY_STATES.",
   "streams": [
     {
       "name": "MAVLINK_RAW",
