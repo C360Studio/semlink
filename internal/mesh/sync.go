@@ -71,6 +71,9 @@ func (idx *SummaryIndex) Upsert(item Item) error {
 	if err := item.Validate(); err != nil {
 		return err
 	}
+	if !item.Envelope.SourceKind.ReplicatesOverMeshByDefault() {
+		return fmt.Errorf("mesh source_kind %q does not replicate over mesh by default", item.Envelope.SourceKind)
+	}
 
 	idx.mu.Lock()
 	defer idx.mu.Unlock()

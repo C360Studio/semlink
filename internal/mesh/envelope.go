@@ -14,6 +14,7 @@ type SourceKind string
 
 const (
 	SourceKindMAVLinkProjection SourceKind = "mavlink-projection"
+	SourceKindRawMAVLink        SourceKind = "mavlink-raw"
 	SourceKindPeerSummary       SourceKind = "peer-summary"
 	SourceKindOperator          SourceKind = "operator"
 	SourceKindRuleEngine        SourceKind = "rule-engine"
@@ -145,6 +146,15 @@ func (e Envelope) Validate() error {
 }
 
 func (s SourceKind) Valid() bool {
+	switch s {
+	case SourceKindMAVLinkProjection, SourceKindRawMAVLink, SourceKindPeerSummary, SourceKindOperator, SourceKindRuleEngine:
+		return true
+	default:
+		return false
+	}
+}
+
+func (s SourceKind) ReplicatesOverMeshByDefault() bool {
 	switch s {
 	case SourceKindMAVLinkProjection, SourceKindPeerSummary, SourceKindOperator, SourceKindRuleEngine:
 		return true

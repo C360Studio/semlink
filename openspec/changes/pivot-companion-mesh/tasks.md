@@ -24,7 +24,7 @@
 - [x] 3.3 Add unreliable-link harness tests for reconnect, duplicate delivery,
       stale telemetry expiry, and bounded catch-up
 - [x] 3.4 Add one concrete demo transport
-- [ ] 3.5 Prove raw MAVLink frames do not replicate over the mesh by default
+- [x] 3.5 Prove raw MAVLink frames do not replicate over the mesh by default
 
 ## 4. Rules And Command Safety Slice
 
