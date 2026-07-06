@@ -13,6 +13,14 @@ const (
 	MavAutopilotGeneric    = 0
 	MavModeFlagSafetyArmed = 0x80
 	MavStateActive         = 4
+
+	MAVCmdRequestMessage = 512
+
+	MAVResultAccepted            = 0
+	MAVResultTemporarilyRejected = 1
+	MAVResultDenied              = 2
+	MAVResultUnsupported         = 3
+	MAVResultFailed              = 4
 )
 
 // MAVTypeName returns the graph-facing vehicle type label for the MAVLink
@@ -99,6 +107,29 @@ func (g GlobalPositionInt) GroundSpeedMS() float64 {
 	return math.Hypot(float64(g.VXCMS), float64(g.VYCMS)) / 100
 }
 
+type CommandLongFields struct {
+	Params          [7]float32
+	Command         uint16
+	TargetSystem    uint8
+	TargetComponent uint8
+	Confirmation    uint8
+}
+
+// CommandAck is MAVLink common COMMAND_ACK (#77).
+type CommandAck struct {
+	envelope
+	Command         uint16
+	Result          uint8
+	Progress        uint8
+	ResultParam2    int32
+	TargetSystem    uint8
+	TargetComponent uint8
+}
+
+func (a CommandAck) Accepted() bool {
+	return a.Result == MAVResultAccepted
+}
+
 // DecodeMessage decodes a supported MAVLink frame payload into a typed message.
 func DecodeMessage(data []byte) (Message, error) {
 	frame, err := DecodeFrame(data)
@@ -155,6 +186,22 @@ func DecodeMessage(data []byte) (Message, error) {
 			VZCMS:         int16(binary.LittleEndian.Uint16(frame.Payload[24:26])),
 			HeadingCDeg:   binary.LittleEndian.Uint16(frame.Payload[26:28]),
 		}, nil
+	case MessageCommandAck:
+		if len(frame.Payload) < 3 {
+			return nil, fmt.Errorf("mavlink: COMMAND_ACK payload too short: %d", len(frame.Payload))
+		}
+		ack := CommandAck{
+			envelope: env,
+			Command:  binary.LittleEndian.Uint16(frame.Payload[0:2]),
+			Result:   frame.Payload[2],
+		}
+		if len(frame.Payload) >= 10 {
+			ack.Progress = frame.Payload[3]
+			ack.ResultParam2 = int32(binary.LittleEndian.Uint32(frame.Payload[4:8]))
+			ack.TargetSystem = frame.Payload[8]
+			ack.TargetComponent = frame.Payload[9]
+		}
+		return ack, nil
 	default:
 		return nil, fmt.Errorf("mavlink: unsupported decoded message id %d", frame.MessageID)
 	}
@@ -198,5 +245,53 @@ func GlobalPositionIntPayload(timeBootMS uint32, latE7, lonE7, altMM, relAltMM i
 	binary.LittleEndian.PutUint16(payload[22:24], uint16(vyCMS))
 	binary.LittleEndian.PutUint16(payload[24:26], uint16(vzCMS))
 	binary.LittleEndian.PutUint16(payload[26:28], headingCDeg)
+	return payload
+}
+
+func RequestMessageCommandPayload(targetSystem, targetComponent uint8, messageID MessageID, confirmation uint8) []byte {
+	var params [7]float32
+	params[0] = float32(messageID)
+	return CommandLongPayload(targetSystem, targetComponent, MAVCmdRequestMessage, confirmation, params)
+}
+
+func CommandLongPayload(targetSystem, targetComponent uint8, command uint16, confirmation uint8, params [7]float32) []byte {
+	payload := make([]byte, 33)
+	for i, param := range params {
+		start := i * 4
+		binary.LittleEndian.PutUint32(payload[start:start+4], math.Float32bits(param))
+	}
+	binary.LittleEndian.PutUint16(payload[28:30], command)
+	payload[30] = targetSystem
+	payload[31] = targetComponent
+	payload[32] = confirmation
+	return payload
+}
+
+func DecodeCommandLongPayload(payload []byte) (CommandLongFields, error) {
+	if len(payload) < 33 {
+		return CommandLongFields{}, fmt.Errorf("mavlink: COMMAND_LONG payload too short: %d", len(payload))
+	}
+	var params [7]float32
+	for i := range params {
+		start := i * 4
+		params[i] = math.Float32frombits(binary.LittleEndian.Uint32(payload[start : start+4]))
+	}
+	return CommandLongFields{
+		Params:          params,
+		Command:         binary.LittleEndian.Uint16(payload[28:30]),
+		TargetSystem:    payload[30],
+		TargetComponent: payload[31],
+		Confirmation:    payload[32],
+	}, nil
+}
+
+func CommandAckPayload(command uint16, result, progress uint8, resultParam2 int32, targetSystem, targetComponent uint8) []byte {
+	payload := make([]byte, 10)
+	binary.LittleEndian.PutUint16(payload[0:2], command)
+	payload[2] = result
+	payload[3] = progress
+	binary.LittleEndian.PutUint32(payload[4:8], uint32(resultParam2))
+	payload[8] = targetSystem
+	payload[9] = targetComponent
 	return payload
 }

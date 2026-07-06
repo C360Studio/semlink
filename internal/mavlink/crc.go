@@ -9,6 +9,9 @@ const (
 	MessageHeartbeat         MessageID = 0
 	MessageSysStatus         MessageID = 1
 	MessageGlobalPositionInt MessageID = 33
+	MessageCommandLong       MessageID = 76
+	MessageCommandAck        MessageID = 77
+	MessageAutopilotVersion  MessageID = 148
 )
 
 const (
@@ -23,6 +26,8 @@ var crcExtra = map[MessageID]byte{
 	MessageHeartbeat:         50,
 	MessageSysStatus:         124,
 	MessageGlobalPositionInt: 104,
+	MessageCommandLong:       152,
+	MessageCommandAck:        143,
 }
 
 func messageCRCExtra(id MessageID) (byte, error) {
