@@ -18,9 +18,9 @@
 
 ## 3. Mesh Synchronization Slice
 
-- [ ] 3.1 Define mesh envelope types with origin, ordering, expiry, confidence,
+- [x] 3.1 Define mesh envelope types with origin, ordering, expiry, confidence,
       merge policy, and payload hash
-- [ ] 3.2 Define per-origin watermarks and diff generation
+- [x] 3.2 Define per-origin watermarks and diff generation
 - [ ] 3.3 Add unreliable-link harness tests for reconnect, duplicate delivery,
       stale telemetry expiry, and bounded catch-up
 - [ ] 3.4 Add one concrete demo transport
