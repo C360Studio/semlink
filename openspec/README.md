@@ -8,7 +8,8 @@ explicit requirements.
 
 ## Layout
 
-- `project.md`: standing project context and conventions.
+- `config.yaml`: active OpenSpec 1.5 schema selection, standing project
+  context, and artifact rules.
 - `changes/<change-id>/proposal.md`: why the change exists, what changes, and
   expected impact.
 - `changes/<change-id>/design.md`: design decisions, trade-offs, rollout, and

@@ -12,11 +12,12 @@ multiple Navigators to prove the software shape. We need deterministic multi-nod
 simulation, ArduPilot SITL fidelity, and a bounded mesh protocol before hardware
 claims.
 
-The SemStreams checkout was refreshed on 2026-07-03. The latest released tag is
-`v1.0.0-beta.126`; active predicate-index work on
-`fix/gh430-predicate-index-o2` is query/index-side. SemStreams still exposes
-local metadata and CAS surfaces, not distributed CRDT causality, so the SemLink
-mesh needs its own origin, ordering, expiry, and merge-policy envelope.
+The SemStreams release pin was refreshed on 2026-07-06 to
+`v1.0.0-beta.141`. Recent upstream work includes OpenSpec 1.5 migration,
+`ENTITY_STATES` TTL correction, and graph-ingest observability/backpressure
+work. SemStreams still exposes local metadata and CAS surfaces, not distributed
+CRDT causality, so the SemLink mesh needs its own origin, ordering, expiry, and
+merge-policy envelope.
 
 ## What Changes
 
@@ -60,4 +61,4 @@ mesh needs its own origin, ordering, expiry, and merge-policy envelope.
 - future MAVLink parser/UDP/SITL code reuse from SemOps
 - future simulator and mesh harness packages
 - future Svelte operator UI language and workflows
-- future SemStreams tag adoption once the index fixes are released
+- future SemStreams tag adoption as upstream substrate releases advance

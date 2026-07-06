@@ -20,11 +20,11 @@ is `N` boat-local SemLink nodes running beside the autopilot, exchanging selecte
 semantic current state across unreliable RF links, and giving operators or
 SemOps a coherent downstream view when connectivity permits.
 
-The local SemStreams checkout was refreshed on 2026-07-03 before opening this
-ADR. The latest released tag is `v1.0.0-beta.126`; active branch work on
-`fix/gh430-predicate-index-o2` is query/index-side, centered on predicate-index
-composite-key sharding and ADR 065. The mutation path still exposes local
-bookkeeping and concurrency surfaces:
+The SemStreams release pin was refreshed on 2026-07-06 to
+`v1.0.0-beta.141`. Recent upstream work includes OpenSpec 1.5 migration,
+`ENTITY_STATES` TTL correction, and graph-ingest observability/backpressure
+work. The mutation path still exposes local bookkeeping and concurrency
+surfaces:
 
 - `EntityState.Version`
 - `EntityState.UpdatedAt`
