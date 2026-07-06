@@ -45,13 +45,14 @@ type TransmitRequest struct {
 }
 
 type TransmitResult struct {
-	Accepted  bool              `json:"accepted"`
-	Status    string            `json:"status"`
-	StartedAt time.Time         `json:"started_at"`
-	Preflight PreflightResult   `json:"preflight"`
-	Frames    []FrameEvidence   `json:"frames"`
-	ACKs      []ACKEvidence     `json:"acks"`
-	PostState PostStateEvidence `json:"post_state"`
+	Accepted      bool                           `json:"accepted"`
+	Status        string                         `json:"status"`
+	StartedAt     time.Time                      `json:"started_at"`
+	Preflight     PreflightResult                `json:"preflight"`
+	HardwareBlock *HardwareTransmitBlockEvidence `json:"hardware_block,omitempty"`
+	Frames        []FrameEvidence                `json:"frames"`
+	ACKs          []ACKEvidence                  `json:"acks"`
+	PostState     PostStateEvidence              `json:"post_state"`
 }
 
 type FrameEvidence struct {
@@ -105,6 +106,25 @@ type PostStateEvidence struct {
 
 func (g SimulatorTransmitGate) Transmit(ctx context.Context, req TransmitRequest) (TransmitResult, error) {
 	startedAt := g.now()
+	if RuntimeMode(normalize(string(req.Preflight.RuntimeMode))) == RuntimeModeHardware {
+		blocker := DefaultHardwareTransmitBlocker()
+		blocker.Now = g.Now
+		block, err := blocker.Check(HardwareTransmitRequest{
+			RuntimeMode:       req.Preflight.RuntimeMode,
+			SafetyProfile:     req.Preflight.SafetyProfile,
+			TargetEntity:      req.Preflight.TargetEntity,
+			Verb:              req.Preflight.Verb,
+			RequestedBy:       req.Preflight.RequestedBy,
+			TargetSystemID:    req.TargetSystemID,
+			TargetComponentID: req.TargetComponentID,
+		})
+		return TransmitResult{
+			Status:        block.Status,
+			StartedAt:     startedAt,
+			HardwareBlock: &block,
+		}, err
+	}
+
 	preflight := g.Preflight.Check(req.Preflight)
 	result := TransmitResult{
 		Status:    "preflight-rejected",

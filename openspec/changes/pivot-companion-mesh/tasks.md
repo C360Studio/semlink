@@ -33,7 +33,7 @@
 - [x] 4.3 Add simulator-only command preflight gate
 - [x] 4.4 Add simulator command transmit gate with COMMAND_ACK and post-state
       polling
-- [ ] 4.5 Keep hardware transmit blocked until a separate OpenSpec change
+- [x] 4.5 Keep hardware transmit blocked until a separate OpenSpec change
       defines authorization and safety evidence
 
 ## 5. Operator Experience And Egress

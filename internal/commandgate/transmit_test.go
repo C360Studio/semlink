@@ -110,6 +110,38 @@ func TestSimulatorTransmitGateRetriesUntilAcceptedACK(t *testing.T) {
 	}
 }
 
+func TestSimulatorTransmitGateBlocksHardwareWithoutTransmit(t *testing.T) {
+	tx := &recordingTransmitter{}
+	gate := SimulatorTransmitGate{
+		Transmitter:     tx,
+		ACKObserver:     &scriptedACKObserver{},
+		PostStatePoller: &scriptedPostStatePoller{},
+		Now:             func() time.Time { return time.Unix(201, 0) },
+	}
+	req := validSimulatorTransmit()
+	req.Preflight.RuntimeMode = RuntimeModeHardware
+
+	result, err := gate.Transmit(context.Background(), req)
+	if !errors.Is(err, ErrHardwareTransmitBlocked) {
+		t.Fatalf("error = %v, want ErrHardwareTransmitBlocked", err)
+	}
+	if result.Accepted {
+		t.Fatal("Accepted = true, want false")
+	}
+	if result.Status != HardwareTransmitBlockStatus {
+		t.Fatalf("status = %q, want %q", result.Status, HardwareTransmitBlockStatus)
+	}
+	if result.HardwareBlock == nil {
+		t.Fatal("hardware block evidence is nil")
+	}
+	if result.HardwareBlock.RequiredChange == "" {
+		t.Fatal("required OpenSpec change is empty")
+	}
+	if len(tx.frames) != 0 {
+		t.Fatalf("transmitted frames = %d, want 0", len(tx.frames))
+	}
+}
+
 func TestSimulatorTransmitGateRejectsFailedPreflightWithoutTransmit(t *testing.T) {
 	tx := &recordingTransmitter{}
 	gate := SimulatorTransmitGate{
@@ -118,7 +150,7 @@ func TestSimulatorTransmitGateRejectsFailedPreflightWithoutTransmit(t *testing.T
 		PostStatePoller: &scriptedPostStatePoller{},
 	}
 	req := validSimulatorTransmit()
-	req.Preflight.RuntimeMode = RuntimeModeHardware
+	req.Preflight.SimulatorConfirmed = false
 
 	result, err := gate.Transmit(context.Background(), req)
 	if !errors.Is(err, ErrPreflightRejected) {
