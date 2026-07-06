@@ -10,6 +10,7 @@ import (
 
 	"github.com/c360studio/semlink/internal/cop"
 	"github.com/c360studio/semlink/internal/projector"
+	"github.com/c360studio/semlink/internal/rules"
 	"github.com/c360studio/semstreams/component"
 	"github.com/c360studio/semstreams/graph"
 	"github.com/c360studio/semstreams/natsclient"
@@ -112,6 +113,12 @@ func StartRuntime(ctx context.Context, opts RuntimeOptions) (*Runtime, error) {
 			cleanupEmbeddedNATS(embeddedServer, embeddedStoreDir)
 		}
 		return nil, fmt.Errorf("register semlink cop payloads: %w", err)
+	}
+	if err := rules.RegisterPayloads(reg); err != nil {
+		if embeddedServer != nil {
+			cleanupEmbeddedNATS(embeddedServer, embeddedStoreDir)
+		}
+		return nil, fmt.Errorf("register semlink rule payloads: %w", err)
 	}
 
 	ingest, err := startGraphIngest(ctx, client, reg, logger)
