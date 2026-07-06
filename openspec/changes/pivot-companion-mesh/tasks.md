@@ -21,7 +21,7 @@
 - [x] 3.1 Define mesh envelope types with origin, ordering, expiry, confidence,
       merge policy, and payload hash
 - [x] 3.2 Define per-origin watermarks and diff generation
-- [ ] 3.3 Add unreliable-link harness tests for reconnect, duplicate delivery,
+- [x] 3.3 Add unreliable-link harness tests for reconnect, duplicate delivery,
       stale telemetry expiry, and bounded catch-up
 - [ ] 3.4 Add one concrete demo transport
 - [ ] 3.5 Prove raw MAVLink frames do not replicate over the mesh by default
