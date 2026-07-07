@@ -4,7 +4,7 @@
       flags against the handoff requirements
 - [x] 1.2 Add a documented companion handoff profile for node identity, MAVLink
       UDP input, local SemStreams mode, mesh peers, and downstream consumers
-- [ ] 1.3 Validate the handoff profile with focused unit tests and clear
+- [x] 1.3 Validate the handoff profile with focused unit tests and clear
       operator-facing errors
 - [ ] 1.4 Expose handoff profile metadata through local readiness or evidence
       output

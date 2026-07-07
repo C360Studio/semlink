@@ -11,10 +11,11 @@ Use the copyable profile at:
 configs/handoff/companion.env.example
 ```
 
-Task 1.2 defines the profile contract. Parser validation and full runtime
-wiring are later tasks in `companion-deployment-handoff`, so this document
-labels fields that are already consumed by current scripts versus fields that
-are reserved for the next implementation slices.
+Task 1.2 defined the profile contract. Task 1.3 adds parser validation in
+`internal/handoff`; full runtime wiring remains a later task in
+`companion-deployment-handoff`. This document labels fields that are already
+consumed by current scripts versus fields that are reserved for the next
+implementation slices.
 
 ## Profile Fields
 
@@ -27,8 +28,9 @@ are reserved for the next implementation slices.
 | `SEMLINK_CALLSIGN` | planned | Human-readable boat callsign for evidence and demos. |
 
 The current evidence API can carry a node ID through `gcs.ServerOptions`, but
-`cmd/semgcs-demo` does not yet expose `-node-id`. Task 1.3 should validate the
-identity fields, and task 1.4 should expose them through readiness/evidence.
+`cmd/semgcs-demo` does not yet expose `-node-id`. The handoff validator rejects
+blank or whitespace-separated identity tokens, and task 1.4 should expose the
+accepted identity through readiness/evidence.
 
 ### Local API
 
@@ -82,7 +84,8 @@ prove package readiness, but they do not prove autopilot wire compatibility.
 | `SEMLINK_MESH_PEERS` | planned | Comma-separated absolute peer base URLs. |
 
 Leave `SEMLINK_MESH_PEERS` empty for a single-node handoff. Task 4.1 should
-wire this into mesh posture evidence and peer count reporting.
+wire this into mesh posture evidence and peer count reporting. The handoff
+validator accepts only absolute `http` or `https` peer URLs.
 
 ### Downstream Consumers
 
@@ -105,7 +108,8 @@ as downstream consumers.
 
 The deployable handoff may run near hardware, but hardware MAVLink command
 transmit remains blocked until a later accepted OpenSpec change defines
-authorization and safety evidence.
+authorization and safety evidence. The handoff validator rejects
+`SEMLINK_HARDWARE_TRANSMIT_ENABLED=true`.
 
 ### TAK Bridge
 
