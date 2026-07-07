@@ -62,3 +62,28 @@ GCS dashboard to prove local readiness.
 - **THEN** local health, registration, and evidence APIs are sufficient to
   verify companion readiness
 - **AND** SemOps and semstreams-ui remain optional downstream consumers
+
+### Requirement: SemOps Readback Adapter Uses Native Draft Contract
+
+SemLink SHALL keep any native adapter for the SemOps companion readback v0
+contract inside the draft-gated SemOps/SemLink review boundary.
+
+#### Scenario: Companion submits SemOps readback intent
+
+- **WHEN** SemLink submits MVP ArduPilot readback intent to SemOps
+- **THEN** the request uses the
+  `c360.semops.semlink.ardupilot.readback.v0` contract
+- **AND** the request uses MAVLink-native `target_system_id`,
+  `target_component_id`, `command_id`, and `requested_message_id` fields
+- **AND** the request does not require SemLink to send `target_asset_id` or
+  prove the SemOps born target
+- **AND** the request does not require CS API/SemConnect in the hot path
+
+#### Scenario: Companion adapter handles SemOps authority boundary
+
+- **WHEN** SemLink builds or sends the draft readback request
+- **THEN** the adapter does not mint trusted SemOps operator headers
+- **AND** the adapter expects SemOps, a gateway, a sidecar, or a test harness to
+  own trusted-header translation
+- **AND** accepted or duplicate responses preserve no-native/no-companion
+  transmit posture for the MVP path

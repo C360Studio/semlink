@@ -20,6 +20,8 @@ handoff.
   checks for the handoff.
 - Keep SemOps and semstreams-ui as downstream consumers of local APIs rather
   than dependencies of the package.
+- Add a draft native SemOps readback adapter for the v0 companion contract
+  without making CS API/SemConnect a hot-path dependency.
 - Preserve the existing hardware command-transmit block; this handoff may run
   near hardware but must not enable hardware MAVLink transmit.
 
@@ -49,5 +51,6 @@ handoff.
 - CLI/config/env handling for node identity, MAVLink UDP input, local
   SemStreams, peers, and downstream consumer metadata.
 - Local HTTP evidence/readiness API documentation and tests.
+- Draft SemOps companion readback adapter and mirrored v0 fixture tests.
 - SITL/UDP demo scripts and handoff documentation.
 - Release/tag guidance for the first companion package checkpoint.

@@ -66,6 +66,19 @@ Alternative considered: rebuild a focused SemLink dashboard for the package.
 That would undermine the archived product boundary and compete with SemOps and
 semstreams-ui.
 
+### SemOps Readback Adapter Is Draft-Contract Gated
+
+SemOps owns the GCS/COP command-intent admission boundary. SemLink may carry a
+small native POST adapter for the SemOps
+`c360.semops.semlink.ardupilot.readback.v0` draft contract so the companion
+runtime can submit `MAV_CMD_REQUEST_MESSAGE` / `AUTOPILOT_VERSION` readback
+intent without CS API in the hot path.
+
+This adapter is not final contract acceptance, runtime enablement, or trusted
+SemOps auth ownership. SemLink mirrors the v0 fixtures locally for CI and keeps
+the adapter behind package code until the SemOps contract branch is visible and
+final hold-out review is complete.
+
 ### Historical SemGCS Names Are Migration Debt
 
 The current `cmd/semgcs-demo` binary and `internal/gcs` package still carry the
@@ -114,9 +127,11 @@ model, operator workflow, and recovery evidence.
 1. Add or tighten the handoff configuration profile and docs.
 2. Extend the BlueOS-style entrypoint/Compose smoke to load that profile.
 3. Add readiness/evidence tests for package metadata and local APIs.
-4. Connect the SITL/UDP handoff script to the package profile.
-5. Update demo/readme docs with the release-check command set.
-6. Validate with Go tests, OpenSpec, and the local package smoke when Docker is
+4. Add the draft SemOps readback adapter against the v0 fixtures without
+   enabling hardware transmit or CS API-first runtime behavior.
+5. Connect the SITL/UDP handoff script to the package profile.
+6. Update demo/readme docs with the release-check command set.
+7. Validate with Go tests, OpenSpec, and the local package smoke when Docker is
    available.
 
 Rollback is simple: do not use the new handoff profile or image tag. Existing
