@@ -20,6 +20,10 @@ Start SemLink with a UDP MAVLink listener:
 MAVLINK_UDP_LISTEN=:14550 go run ./cmd/semgcs-demo -mavlink-udp=:14550
 ```
 
+For the companion handoff profile, the matching field is
+`SEMLINK_MAVLINK_UDP_LISTEN=:14550` in
+`configs/handoff/companion.env.example`.
+
 In a second terminal, run ArduRover SITL:
 
 ```bash

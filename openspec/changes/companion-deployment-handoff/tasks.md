@@ -2,7 +2,7 @@
 
 - [x] 1.1 Inventory current BlueOS, SITL, evidence, and command-gate runtime
       flags against the handoff requirements
-- [ ] 1.2 Add a documented companion handoff profile for node identity, MAVLink
+- [x] 1.2 Add a documented companion handoff profile for node identity, MAVLink
       UDP input, local SemStreams mode, mesh peers, and downstream consumers
 - [ ] 1.3 Validate the handoff profile with focused unit tests and clear
       operator-facing errors
