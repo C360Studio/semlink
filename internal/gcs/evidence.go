@@ -5,6 +5,7 @@ import (
 	"time"
 
 	"github.com/c360studio/semlink/internal/commandgate"
+	"github.com/c360studio/semlink/internal/handoff"
 	"github.com/c360studio/semlink/internal/mesh"
 	"github.com/c360studio/semlink/internal/rules"
 )
@@ -19,6 +20,7 @@ type EvidenceBundle struct {
 	Contract    EvidenceContract  `json:"contract"`
 	GeneratedAt time.Time         `json:"generated_at"`
 	Node        NodeEvidence      `json:"node"`
+	Profile     ProfileEvidence   `json:"profile"`
 	Downstream  []DownstreamView  `json:"downstream"`
 	Vehicles    []VehicleEvidence `json:"vehicles"`
 	Mesh        MeshEvidence      `json:"mesh"`
@@ -46,6 +48,70 @@ type NodeEvidence struct {
 	GraphWrites        int64     `json:"graph_writes"`
 	GraphErrors        int64     `json:"graph_errors"`
 	BufferDrops        int64     `json:"buffer_drops"`
+}
+
+type ProfileEvidence struct {
+	Status     string                    `json:"status"`
+	NodeID     string                    `json:"node_id,omitempty"`
+	VehicleID  string                    `json:"vehicle_id,omitempty"`
+	Callsign   string                    `json:"callsign,omitempty"`
+	HTTPListen string                    `json:"http_listen,omitempty"`
+	BlueOS     BlueOSProfileEvidence     `json:"blueos"`
+	SemStreams SemStreamsProfileEvidence `json:"semstreams"`
+	MAVLink    MAVLinkProfileEvidence    `json:"mavlink"`
+	Simulator  SimulatorProfileEvidence  `json:"simulator"`
+	Mesh       MeshProfileEvidence       `json:"mesh"`
+	Downstream DownstreamProfileEvidence `json:"downstream"`
+	Command    CommandProfileEvidence    `json:"command"`
+	TAK        TAKProfileEvidence        `json:"tak"`
+}
+
+type BlueOSProfileEvidence struct {
+	HostPort int `json:"host_port,omitempty"`
+}
+
+type SemStreamsProfileEvidence struct {
+	Embedded bool   `json:"embedded"`
+	NATSURL  string `json:"nats_url,omitempty"`
+}
+
+type MAVLinkProfileEvidence struct {
+	UDPListen               string `json:"udp_listen,omitempty"`
+	UDPHost                 string `json:"udp_host,omitempty"`
+	UDPPort                 int    `json:"udp_port,omitempty"`
+	ExternalInputConfigured bool   `json:"external_input_configured"`
+}
+
+type SimulatorProfileEvidence struct {
+	Vehicles int `json:"vehicles"`
+	Hz       int `json:"hz"`
+	Buffer   int `json:"buffer"`
+}
+
+type MeshProfileEvidence struct {
+	Mode      string   `json:"mode"`
+	PeerCount int      `json:"peer_count"`
+	Peers     []string `json:"peers,omitempty"`
+}
+
+type DownstreamProfileEvidence struct {
+	CSAPIConfigured bool   `json:"csapi_configured"`
+	CSAPIURL        string `json:"csapi_url,omitempty"`
+}
+
+type CommandProfileEvidence struct {
+	RuntimeMode             string `json:"runtime_mode"`
+	HardwareTransmitEnabled bool   `json:"hardware_transmit_enabled"`
+	HardwareTransmitStatus  string `json:"hardware_transmit_status"`
+}
+
+type TAKProfileEvidence struct {
+	Enabled        bool   `json:"enabled"`
+	MulticastAddr  string `json:"multicast_addr,omitempty"`
+	TCPListen      string `json:"tcp_listen,omitempty"`
+	InboundUDP     string `json:"inbound_udp,omitempty"`
+	InboundTCP     string `json:"inbound_tcp,omitempty"`
+	PublishSeconds int64  `json:"publish_seconds,omitempty"`
 }
 
 type DownstreamView struct {
@@ -139,6 +205,7 @@ func (s *Server) EvidenceBundle(now time.Time) EvidenceBundle {
 		Contract:    defaultEvidenceContract(),
 		GeneratedAt: now,
 		Node:        nodeEvidence(s.nodeID, snapshot.Metrics, now),
+		Profile:     profileEvidence(s.handoffProfile),
 		Downstream:  downstreamViews(s.csapiURL),
 		Vehicles:    vehicleEvidence(snapshot.Vehicles),
 		Mesh:        s.meshEvidence(now),
@@ -162,6 +229,67 @@ func defaultEvidenceContract() EvidenceContract {
 			"graph_lens": "/api/graph?entity_id={entity_id}",
 			"events":     "/api/events",
 			"commands":   "/api/commands",
+		},
+	}
+}
+
+func profileEvidence(profile *handoff.Profile) ProfileEvidence {
+	if profile == nil {
+		return ProfileEvidence{Status: "not-configured"}
+	}
+	meshMode := "off"
+	if len(profile.MeshPeers) > 0 {
+		meshMode = "static-peers"
+	}
+	hardwareStatus := "blocked"
+	if profile.HardwareTransmitEnabled {
+		hardwareStatus = "enabled"
+	}
+	return ProfileEvidence{
+		Status:     "configured",
+		NodeID:     profile.NodeID,
+		VehicleID:  profile.VehicleID,
+		Callsign:   profile.Callsign,
+		HTTPListen: profile.HTTPListen,
+		BlueOS: BlueOSProfileEvidence{
+			HostPort: profile.BlueOSHostPort,
+		},
+		SemStreams: SemStreamsProfileEvidence{
+			Embedded: profile.EmbeddedNATS,
+			NATSURL:  profile.NATSURL,
+		},
+		MAVLink: MAVLinkProfileEvidence{
+			UDPListen:               profile.MAVLinkUDPListen,
+			UDPHost:                 profile.MAVLinkUDPHost,
+			UDPPort:                 profile.MAVLinkUDPPort,
+			ExternalInputConfigured: profile.MAVLinkUDPListen != "",
+		},
+		Simulator: SimulatorProfileEvidence{
+			Vehicles: profile.Vehicles,
+			Hz:       profile.Hz,
+			Buffer:   profile.Buffer,
+		},
+		Mesh: MeshProfileEvidence{
+			Mode:      meshMode,
+			PeerCount: len(profile.MeshPeers),
+			Peers:     append([]string(nil), profile.MeshPeers...),
+		},
+		Downstream: DownstreamProfileEvidence{
+			CSAPIConfigured: profile.CSAPIURL != "",
+			CSAPIURL:        profile.CSAPIURL,
+		},
+		Command: CommandProfileEvidence{
+			RuntimeMode:             string(profile.CommandRuntimeMode),
+			HardwareTransmitEnabled: profile.HardwareTransmitEnabled,
+			HardwareTransmitStatus:  hardwareStatus,
+		},
+		TAK: TAKProfileEvidence{
+			Enabled:        profile.TAKEnabled,
+			MulticastAddr:  profile.TAKMulticastAddr,
+			TCPListen:      profile.TAKTCPListen,
+			InboundUDP:     profile.TAKInboundUDPListen,
+			InboundTCP:     profile.TAKInboundTCPListen,
+			PublishSeconds: int64(profile.TAKInterval.Seconds()),
 		},
 	}
 }

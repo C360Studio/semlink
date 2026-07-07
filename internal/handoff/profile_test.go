@@ -169,6 +169,32 @@ func TestParseEnvRejectsExternalNATSWithoutURL(t *testing.T) {
 	assertErrorContains(t, err, "must be set when SEMLINK_EMBEDDED_NATS is false")
 }
 
+func TestMapFromEnviron(t *testing.T) {
+	got := MapFromEnviron([]string{
+		"SEMLINK_NODE_ID=boat-alpha",
+		"SEMLINK_MESH_PEERS=http://boat-bravo.local:8081",
+		"ignored",
+		"=empty-key",
+		"NATS_URL=nats://127.0.0.1:4222",
+	})
+
+	if got[EnvNodeID] != "boat-alpha" {
+		t.Fatalf("%s = %q", EnvNodeID, got[EnvNodeID])
+	}
+	if got[EnvMeshPeers] != "http://boat-bravo.local:8081" {
+		t.Fatalf("%s = %q", EnvMeshPeers, got[EnvMeshPeers])
+	}
+	if got[EnvNATSURL] != "nats://127.0.0.1:4222" {
+		t.Fatalf("%s = %q", EnvNATSURL, got[EnvNATSURL])
+	}
+	if _, ok := got[""]; ok {
+		t.Fatal("empty key was included")
+	}
+	if _, ok := got["ignored"]; ok {
+		t.Fatal("malformed environment entry was included")
+	}
+}
+
 func readExampleEnv(t *testing.T) map[string]string {
 	t.Helper()
 

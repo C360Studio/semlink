@@ -66,6 +66,16 @@ Alternative considered: rebuild a focused SemLink dashboard for the package.
 That would undermine the archived product boundary and compete with SemOps and
 semstreams-ui.
 
+### Historical SemGCS Names Are Migration Debt
+
+The current `cmd/semgcs-demo` binary and `internal/gcs` package still carry the
+main companion runtime, store, local API, evidence bundle, optional adapters,
+and legacy static UI serving. Those pieces should be renamed or split toward a
+companion-service shape rather than deleted while they remain the handoff
+runtime. The historical Svelte UI is the strongest retirement candidate, but
+removal should be gated by package smoke and evidence checks that do not depend
+on repo-owned glass.
+
 ### SITL/UDP Is The Release Fidelity Lane
 
 The package should prove MAVLink wire behavior through UDP and ArduRover/boat

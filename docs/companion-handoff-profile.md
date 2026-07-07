@@ -12,10 +12,11 @@ configs/handoff/companion.env.example
 ```
 
 Task 1.2 defined the profile contract. Task 1.3 adds parser validation in
-`internal/handoff`; full runtime wiring remains a later task in
-`companion-deployment-handoff`. This document labels fields that are already
-consumed by current scripts versus fields that are reserved for the next
-implementation slices.
+`internal/handoff`, and task 1.4 exposes active profile metadata through
+`/api/evidence`. Full BlueOS entrypoint and Compose smoke wiring remains a
+later task in `companion-deployment-handoff`. This document labels fields that
+are already consumed by current scripts versus fields that are reserved for the
+next implementation slices.
 
 ## Profile Fields
 
@@ -29,8 +30,8 @@ implementation slices.
 
 The current evidence API can carry a node ID through `gcs.ServerOptions`, but
 `cmd/semgcs-demo` does not yet expose `-node-id`. The handoff validator rejects
-blank or whitespace-separated identity tokens, and task 1.4 should expose the
-accepted identity through readiness/evidence.
+blank or whitespace-separated identity tokens, and `/api/evidence` exposes the
+accepted identity under `profile`.
 
 ### Local API
 

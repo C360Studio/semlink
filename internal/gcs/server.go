@@ -10,19 +10,21 @@ import (
 	"time"
 
 	"github.com/c360studio/semlink/internal/blueos"
+	"github.com/c360studio/semlink/internal/handoff"
 	"github.com/c360studio/semlink/internal/mesh"
 )
 
 type Server struct {
-	store    *Store
-	commands *CommandService
-	graph    EntityQuerier
-	csapiURL string
-	client   *http.Client
-	static   string
-	blueos   blueos.Registration
-	nodeID   string
-	mesh     *mesh.SummaryIndex
+	store          *Store
+	commands       *CommandService
+	graph          EntityQuerier
+	csapiURL       string
+	client         *http.Client
+	static         string
+	blueos         blueos.Registration
+	nodeID         string
+	mesh           *mesh.SummaryIndex
+	handoffProfile *handoff.Profile
 }
 
 type ServerOptions struct {
@@ -32,6 +34,7 @@ type ServerOptions struct {
 	BlueOSRegistration *blueos.Registration
 	NodeID             string
 	MeshIndex          *mesh.SummaryIndex
+	HandoffProfile     *handoff.Profile
 }
 
 func NewServer(store *Store, commands *CommandService, staticDir string, opts ServerOptions) *Server {
@@ -43,16 +46,23 @@ func NewServer(store *Store, commands *CommandService, staticDir string, opts Se
 	if opts.BlueOSRegistration != nil {
 		registration = *opts.BlueOSRegistration
 	}
+	profile := opts.HandoffProfile
+	if profile != nil {
+		copyProfile := *profile
+		copyProfile.MeshPeers = append([]string(nil), profile.MeshPeers...)
+		profile = &copyProfile
+	}
 	return &Server{
-		store:    store,
-		commands: commands,
-		graph:    opts.Graph,
-		csapiURL: opts.CSAPIURL,
-		client:   client,
-		static:   staticDir,
-		blueos:   registration,
-		nodeID:   opts.NodeID,
-		mesh:     opts.MeshIndex,
+		store:          store,
+		commands:       commands,
+		graph:          opts.Graph,
+		csapiURL:       opts.CSAPIURL,
+		client:         client,
+		static:         staticDir,
+		blueos:         registration,
+		nodeID:         opts.NodeID,
+		mesh:           opts.MeshIndex,
+		handoffProfile: profile,
 	}
 }
 

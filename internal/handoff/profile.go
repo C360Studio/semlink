@@ -116,6 +116,18 @@ func DefaultProfile() Profile {
 	}
 }
 
+func MapFromEnviron(environ []string) map[string]string {
+	values := make(map[string]string, len(environ))
+	for _, entry := range environ {
+		key, value, ok := strings.Cut(entry, "=")
+		if !ok || key == "" {
+			continue
+		}
+		values[key] = value
+	}
+	return values
+}
+
 func ParseEnv(values map[string]string) (Profile, error) {
 	profile := DefaultProfile()
 	var problems []Problem

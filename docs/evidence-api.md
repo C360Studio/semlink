@@ -31,6 +31,10 @@ COP fusion.
 
 - `node`: node ID, runtime health, SemStreams mode, NATS URL, uptime, frame
   counters, graph writes, graph errors, and buffer drops.
+- `profile`: handoff profile metadata for identity, HTTP listen address,
+  BlueOS host port, SemStreams mode, MAVLink UDP input, simulator fallback,
+  static mesh peers, optional CS API egress, command posture, and TAK bridge
+  posture.
 - `downstream`: optional downstream consumers and their boundary metadata.
   SemOps and semstreams-ui pull local API evidence. SemConnect is disabled
   until `CS_API_URL` is configured, then acts as curated standards egress.

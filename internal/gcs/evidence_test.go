@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/c360studio/semlink/internal/commandgate"
+	"github.com/c360studio/semlink/internal/handoff"
 	"github.com/c360studio/semlink/internal/mesh"
 	"github.com/c360studio/semlink/internal/projector"
 	"github.com/c360studio/semlink/internal/rules"
@@ -99,9 +100,39 @@ func TestHandleEvidenceReturnsExternalConsumerContract(t *testing.T) {
 		t.Fatalf("Upsert() error = %v", err)
 	}
 
+	profile, err := handoff.ParseEnv(map[string]string{
+		handoff.EnvNodeID:                  "boat-alpha",
+		handoff.EnvVehicleID:               vehicle.ID,
+		handoff.EnvCallsign:                "BOAT-003",
+		handoff.EnvHTTPListen:              ":8081",
+		handoff.EnvBlueOSHostPort:          "8081",
+		handoff.EnvEmbeddedNATS:            "true",
+		handoff.EnvNATSURL:                 "nats://demo",
+		handoff.EnvMAVLinkUDPListen:        ":14550",
+		handoff.EnvMAVLinkUDPHost:          "127.0.0.1",
+		handoff.EnvMAVLinkUDPPort:          "14550",
+		handoff.EnvVehicles:                "1",
+		handoff.EnvHz:                      "5",
+		handoff.EnvBuffer:                  "10000",
+		handoff.EnvMeshPeers:               "http://boat-bravo.local:8081,http://boat-charlie.local:8081",
+		handoff.EnvCSAPIURL:                "http://127.0.0.1:48080",
+		handoff.EnvCSAPIInterval:           "2s",
+		handoff.EnvCSAPIObservation:        "5s",
+		handoff.EnvCommandRuntimeMode:      string(handoff.CommandRuntimeHardwareReadonly),
+		handoff.EnvHardwareTransmitEnabled: "false",
+		handoff.EnvTAKEnabled:              "false",
+		handoff.EnvTAKMulticastAddr:        "239.2.3.1:6969",
+		handoff.EnvTAKInterval:             "1s",
+	})
+	if err != nil {
+		t.Fatalf("ParseEnv() error = %v", err)
+	}
+
 	server := NewServer(store, nil, "", ServerOptions{
-		NodeID:    "boat-alpha",
-		MeshIndex: index,
+		NodeID:         "boat-alpha",
+		CSAPIURL:       profile.CSAPIURL,
+		MeshIndex:      index,
+		HandoffProfile: &profile,
 	})
 	req := httptest.NewRequest(http.MethodGet, "/api/evidence", nil)
 	rr := httptest.NewRecorder()
@@ -127,6 +158,25 @@ func TestHandleEvidenceReturnsExternalConsumerContract(t *testing.T) {
 	if body.Node.NodeID != "boat-alpha" || body.Node.Runtime != "embedded-semstreams" {
 		t.Fatalf("node = %#v", body.Node)
 	}
+	if body.Profile.Status != "configured" ||
+		body.Profile.NodeID != "boat-alpha" ||
+		body.Profile.VehicleID != vehicle.ID ||
+		body.Profile.MAVLink.UDPListen != ":14550" ||
+		!body.Profile.MAVLink.ExternalInputConfigured ||
+		body.Profile.SemStreams.NATSURL != "nats://demo" {
+		t.Fatalf("profile = %#v", body.Profile)
+	}
+	if body.Profile.Mesh.Mode != "static-peers" || body.Profile.Mesh.PeerCount != 2 {
+		t.Fatalf("profile mesh = %#v", body.Profile.Mesh)
+	}
+	if !body.Profile.Downstream.CSAPIConfigured || body.Profile.Downstream.CSAPIURL != "http://127.0.0.1:48080" {
+		t.Fatalf("profile downstream = %#v", body.Profile.Downstream)
+	}
+	if body.Profile.Command.RuntimeMode != string(handoff.CommandRuntimeHardwareReadonly) ||
+		body.Profile.Command.HardwareTransmitEnabled ||
+		body.Profile.Command.HardwareTransmitStatus != "blocked" {
+		t.Fatalf("profile command = %#v", body.Profile.Command)
+	}
 	semops, ok := downstreamByName(body.Downstream, "semops")
 	if !ok || !semops.Optional || semops.Direction != "pull-local-api" || !semops.Enabled || !semops.NoGCSGlass {
 		t.Fatalf("semops downstream = %#v, ok=%v", semops, ok)
@@ -136,7 +186,7 @@ func TestHandleEvidenceReturnsExternalConsumerContract(t *testing.T) {
 		t.Fatalf("semstreams-ui downstream = %#v, ok=%v", semstreamsUI, ok)
 	}
 	semconnect, ok := downstreamByName(body.Downstream, "semconnect-csapi")
-	if !ok || !semconnect.Optional || semconnect.Enabled || semconnect.Status != "disabled" || !semconnect.NoRawMesh {
+	if !ok || !semconnect.Optional || !semconnect.Enabled || semconnect.Status != "configured" || !semconnect.NoRawMesh {
 		t.Fatalf("semconnect downstream = %#v, ok=%v", semconnect, ok)
 	}
 	if len(body.Vehicles) != 1 || body.Vehicles[0].EvidenceClass != "mavlink-current-state" {
@@ -156,6 +206,24 @@ func TestHandleEvidenceReturnsExternalConsumerContract(t *testing.T) {
 	}
 	if body.Commands[1].Gate == nil || body.Commands[1].Gate.HardwareBlock == nil {
 		t.Fatalf("command gate evidence missing hardware block: %#v", body.Commands)
+	}
+}
+
+func TestEvidenceMarksProfileNotConfiguredWhenNoProfileIsSupplied(t *testing.T) {
+	server := NewServer(NewStore("nats://demo", true), nil, "", ServerOptions{})
+	req := httptest.NewRequest(http.MethodGet, "/api/evidence", nil)
+	rr := httptest.NewRecorder()
+	server.Handler().ServeHTTP(rr, req)
+
+	if rr.Code != http.StatusOK {
+		t.Fatalf("status = %d body = %s", rr.Code, rr.Body.String())
+	}
+	var body EvidenceBundle
+	if err := json.Unmarshal(rr.Body.Bytes(), &body); err != nil {
+		t.Fatalf("decode evidence bundle: %v", err)
+	}
+	if body.Profile.Status != "not-configured" {
+		t.Fatalf("profile status = %q, want not-configured", body.Profile.Status)
 	}
 }
 

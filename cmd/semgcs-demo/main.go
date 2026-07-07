@@ -8,11 +8,13 @@ import (
 	"os"
 	"os/signal"
 	"path/filepath"
+	"strconv"
 	"syscall"
 	"time"
 
 	csbridge "github.com/c360studio/semlink/internal/csapi"
 	"github.com/c360studio/semlink/internal/gcs"
+	"github.com/c360studio/semlink/internal/handoff"
 	semruntime "github.com/c360studio/semlink/internal/semstreams"
 	"github.com/c360studio/semlink/internal/tak"
 )
@@ -40,6 +42,28 @@ func main() {
 	flag.Parse()
 
 	logger := slog.New(slog.NewTextHandler(os.Stdout, &slog.HandlerOptions{Level: slog.LevelInfo}))
+	profile, err := handoff.ParseEnv(handoffProfileValues(os.Environ(), runtimeProfileValues{
+		Listen:                *listen,
+		EmbeddedNATS:          *embeddedNATS,
+		NATSURL:               *natsURL,
+		Vehicles:              *vehicles,
+		Hz:                    *hz,
+		Buffer:                *bufferCapacity,
+		MAVLinkUDP:            *mavlinkUDP,
+		CSAPIURL:              *csapiURL,
+		CSAPIInterval:         *csapiInterval,
+		CSAPIObservationEvery: *csapiObsEvery,
+		TAKEnabled:            *takEnabled,
+		TAKMulticast:          *takMulticast,
+		TAKTCP:                *takTCP,
+		TAKInboundUDP:         *takInboundUDP,
+		TAKInboundTCP:         *takInboundTCP,
+		TAKInterval:           *takInterval,
+	}))
+	if err != nil {
+		logger.Error("invalid companion handoff profile", slog.Any("error", err))
+		os.Exit(1)
+	}
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 	defer stop()
 
@@ -118,8 +142,13 @@ func main() {
 
 	commands := gcs.NewCommandService(rt.Graph, store)
 	server := &http.Server{
-		Addr:              *listen,
-		Handler:           gcs.NewServer(store, commands, *staticDir, gcs.ServerOptions{Graph: rt.Graph, CSAPIURL: *csapiURL}).Handler(),
+		Addr: *listen,
+		Handler: gcs.NewServer(store, commands, *staticDir, gcs.ServerOptions{
+			Graph:          rt.Graph,
+			CSAPIURL:       *csapiURL,
+			NodeID:         profile.NodeID,
+			HandoffProfile: &profile,
+		}).Handler(),
 		ReadHeaderTimeout: 5 * time.Second,
 	}
 
@@ -142,6 +171,46 @@ func main() {
 		logger.Error("http server failed", slog.Any("error", err))
 		os.Exit(1)
 	}
+}
+
+type runtimeProfileValues struct {
+	Listen                string
+	EmbeddedNATS          bool
+	NATSURL               string
+	Vehicles              int
+	Hz                    int
+	Buffer                int
+	MAVLinkUDP            string
+	CSAPIURL              string
+	CSAPIInterval         time.Duration
+	CSAPIObservationEvery time.Duration
+	TAKEnabled            bool
+	TAKMulticast          string
+	TAKTCP                string
+	TAKInboundUDP         string
+	TAKInboundTCP         string
+	TAKInterval           time.Duration
+}
+
+func handoffProfileValues(environ []string, runtime runtimeProfileValues) map[string]string {
+	values := handoff.MapFromEnviron(environ)
+	values[handoff.EnvHTTPListen] = runtime.Listen
+	values[handoff.EnvEmbeddedNATS] = strconv.FormatBool(runtime.EmbeddedNATS)
+	values[handoff.EnvNATSURL] = runtime.NATSURL
+	values[handoff.EnvVehicles] = strconv.Itoa(runtime.Vehicles)
+	values[handoff.EnvHz] = strconv.Itoa(runtime.Hz)
+	values[handoff.EnvBuffer] = strconv.Itoa(runtime.Buffer)
+	values[handoff.EnvMAVLinkUDPListen] = runtime.MAVLinkUDP
+	values[handoff.EnvCSAPIURL] = runtime.CSAPIURL
+	values[handoff.EnvCSAPIInterval] = runtime.CSAPIInterval.String()
+	values[handoff.EnvCSAPIObservation] = runtime.CSAPIObservationEvery.String()
+	values[handoff.EnvTAKEnabled] = strconv.FormatBool(runtime.TAKEnabled)
+	values[handoff.EnvTAKMulticastAddr] = runtime.TAKMulticast
+	values[handoff.EnvTAKTCPListen] = runtime.TAKTCP
+	values[handoff.EnvTAKInboundUDPListen] = runtime.TAKInboundUDP
+	values[handoff.EnvTAKInboundTCPListen] = runtime.TAKInboundTCP
+	values[handoff.EnvTAKInterval] = runtime.TAKInterval.String()
+	return values
 }
 
 func getenv(key, fallback string) string {

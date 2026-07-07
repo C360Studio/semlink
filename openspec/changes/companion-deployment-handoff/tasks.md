@@ -6,7 +6,7 @@
       UDP input, local SemStreams mode, mesh peers, and downstream consumers
 - [x] 1.3 Validate the handoff profile with focused unit tests and clear
       operator-facing errors
-- [ ] 1.4 Expose handoff profile metadata through local readiness or evidence
+- [x] 1.4 Expose handoff profile metadata through local readiness or evidence
       output
 
 ## 2. Package Readiness
@@ -19,6 +19,8 @@
       does not declare hardware command transmit capability
 - [ ] 2.4 Document package run commands, required inputs, and release/tag
       checkpoint criteria
+- [ ] 2.5 Plan or begin the SemGCS runtime rename/migration once package
+      readiness no longer depends on the historical UI surface
 
 ## 3. SITL And UDP Evidence
 
