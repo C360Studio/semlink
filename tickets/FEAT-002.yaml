@@ -4,7 +4,7 @@ assigned: program-manager
 depends_on:
   - FEAT-001
 blocks: []
-status: proposed
+status: implemented
 reviewer: architect,go-developer,go-reviewer,technical-writer
 scope:
   - Implement ADR 003 as the forward SemLink product boundary

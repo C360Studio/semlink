@@ -120,8 +120,16 @@ and `GLOBAL_POSITION_INT`. It does not use MAVSDK.
 ## Spec Workflow
 
 Product-boundary, mesh protocol, command-transmit, and SemStreams contract
-changes use OpenSpec before implementation. The active pivot is tracked under
-`openspec/changes/pivot-companion-mesh/`.
+changes use OpenSpec before implementation. The accepted companion-mesh
+baseline is now tracked in main specs:
+
+- `openspec/specs/companion-mesh-product/spec.md`
+- `openspec/specs/mavlink-companion-runtime/spec.md`
+- `openspec/specs/mesh-synchronization/spec.md`
+- `openspec/specs/rules-and-command-safety/spec.md`
+
+The completed pivot change is archived under
+`openspec/changes/archive/2026-07-07-pivot-companion-mesh/`.
 
 ```bash
 openspec validate --all --strict
@@ -173,12 +181,14 @@ materialization when `-csapi-url` is enabled.
 
 ## Roadmap
 
-The next product slice is the ADR 003 companion-mesh pivot: several boat-local
-SemLink nodes, each with a local MAVLink feed and local SemStreams state,
-exchanging selected current-state summaries over an unreliable mesh harness.
-SemLink should expose those facts through CLI/config and UI-consumable APIs for
-SemOps or semstreams-ui, not grow its own GCS glass. ArduRover / ArduPilot SITL
-without Gazebo should be the first autopilot fidelity lane; PX4 and Gazebo
-remain useful later lanes when the claim needs them. The adapter boundary is
-`internal/mavlink.RawFrame`; no MAVSDK or equivalent vehicle SDK is planned for
-this surface.
+The ADR 003 companion-mesh pivot is now the accepted baseline: several
+boat-local SemLink nodes, each with a local MAVLink feed and local SemStreams
+state, exchanging selected current-state summaries over unreliable links.
+SemLink exposes those facts through CLI/config and UI-consumable APIs for
+SemOps or semstreams-ui, not through repo-owned GCS glass.
+
+The next governed changes should stay narrow: hardware command authorization,
+external consumer integration, stronger SITL/BlueOS fidelity, or a shared
+SemOps/SemLink MAVLink package once duplication pressure is proven. The adapter
+boundary remains `internal/mavlink.RawFrame`; no MAVSDK or equivalent vehicle
+SDK is planned for this surface.
