@@ -44,5 +44,5 @@
       contracts for SemOps and semstreams-ui consumers
 - [x] 5.3 Keep SemOps consumption, semstreams-ui ops/debug consumption, and
       SemConnect standards egress optional and downstream
-- [ ] 5.4 Validate the final slice with docs, unit tests, integration harness,
+- [x] 5.4 Validate the final slice with docs, unit tests, integration harness,
       and demo-script updates

@@ -101,6 +101,26 @@ curl -s http://127.0.0.1:8080/api/evidence
 Confirm that the `downstream` section marks SemOps and semstreams-ui as optional
 pull consumers, and SemConnect as optional standards egress.
 
+## Validation Backstop
+
+Before presenting the companion-mesh slice as current, run the local checks:
+
+```bash
+go test ./...
+go build ./...
+openspec validate --all --strict
+git diff --check
+```
+
+The heavier fidelity lanes stay operator-invoked because they require Docker,
+SITL, sibling checkouts, or hardware:
+
+```bash
+scripts/ardurover-sitl-lane.sh
+scripts/blueos-extension-smoke.sh
+scripts/navigator-readonly-smoke.sh
+```
+
 ## Teardown
 
 ```bash
