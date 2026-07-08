@@ -26,6 +26,66 @@ func TestBazaarMetadataSkeletonIsValid(t *testing.T) {
 	if metadata["name"] != DefaultRegistration().Name {
 		t.Fatalf("metadata name = %q, want %q", metadata["name"], DefaultRegistration().Name)
 	}
+	description := strings.ToLower(metadata["description"])
+	for _, want := range []string{"mavlink", "companion", "mesh"} {
+		if !strings.Contains(description, want) {
+			t.Fatalf("metadata description %q does not declare %q", metadata["description"], want)
+		}
+	}
+	assertTextLacks(t, description, "hardware transmit", "command transmit", "actuator")
+}
+
+func TestBlueOSDockerLabelsDeclareCompanionMeshWithoutHardwareTransmit(t *testing.T) {
+	dockerfile := readRepoText(t, "docker", "blueos-extension", "Dockerfile")
+
+	var company map[string]string
+	if err := json.Unmarshal([]byte(extractDockerfileLabel(t, dockerfile, "company")), &company); err != nil {
+		t.Fatalf("unmarshal company label: %v", err)
+	}
+	about := strings.ToLower(company["about"])
+	for _, want := range []string{"mavlink", "companion", "mesh"} {
+		if !strings.Contains(about, want) {
+			t.Fatalf("company about %q does not declare %q", company["about"], want)
+		}
+	}
+
+	var tags []string
+	if err := json.Unmarshal([]byte(extractDockerfileLabel(t, dockerfile, "tags")), &tags); err != nil {
+		t.Fatalf("unmarshal tags label: %v", err)
+	}
+	tagSet := make(map[string]bool, len(tags))
+	for _, tag := range tags {
+		tagSet[tag] = true
+	}
+	for _, want := range []string{"mavlink", "companion", "mesh", "navigation"} {
+		if !tagSet[want] {
+			t.Fatalf("tags = %#v, missing %q", tags, want)
+		}
+	}
+
+	var permissions map[string]any
+	if err := json.Unmarshal([]byte(extractDockerfileLabel(t, dockerfile, "permissions")), &permissions); err != nil {
+		t.Fatalf("unmarshal permissions label: %v", err)
+	}
+	hostConfig, ok := permissions["HostConfig"].(map[string]any)
+	if !ok {
+		t.Fatalf("permissions HostConfig missing or wrong type: %#v", permissions)
+	}
+	if privileged, ok := hostConfig["Privileged"].(bool); ok && privileged {
+		t.Fatalf("permissions declare privileged hardware access: %#v", hostConfig)
+	}
+	for _, forbiddenKey := range []string{"Devices", "CapAdd", "Privileged"} {
+		if _, ok := hostConfig[forbiddenKey]; ok {
+			t.Fatalf("permissions declare hardware command transmit capability via %s: %#v", forbiddenKey, hostConfig)
+		}
+	}
+	assertTextLacks(t, strings.ToLower(dockerfile),
+		"hardware-transmit-enabled",
+		"command-transmit-enabled",
+		"actuator-control",
+		"/dev/serial",
+		"/dev/tty",
+	)
 }
 
 func TestBlueOSComposeLoadsHandoffProfile(t *testing.T) {
@@ -96,4 +156,38 @@ func assertContainsAll(t *testing.T, text string, wants ...string) {
 			t.Fatalf("text does not contain %q", want)
 		}
 	}
+}
+
+func assertTextLacks(t *testing.T, text string, forbidden ...string) {
+	t.Helper()
+
+	for _, term := range forbidden {
+		if strings.Contains(text, term) {
+			t.Fatalf("text declares forbidden capability %q in %s", term, text)
+		}
+	}
+}
+
+func extractDockerfileLabel(t *testing.T, dockerfile, key string) string {
+	t.Helper()
+
+	prefix := key + "="
+	index := strings.Index(dockerfile, prefix)
+	if index < 0 {
+		t.Fatalf("Dockerfile label %q missing", key)
+	}
+	valueStart := index + len(prefix)
+	if valueStart >= len(dockerfile) {
+		t.Fatalf("Dockerfile label %q has no value", key)
+	}
+	quote := dockerfile[valueStart]
+	if quote != '\'' && quote != '"' {
+		t.Fatalf("Dockerfile label %q is not quoted", key)
+	}
+	remainder := dockerfile[valueStart+1:]
+	valueEnd := strings.IndexByte(remainder, quote)
+	if valueEnd < 0 {
+		t.Fatalf("Dockerfile label %q quote is not closed", key)
+	}
+	return remainder[:valueEnd]
 }

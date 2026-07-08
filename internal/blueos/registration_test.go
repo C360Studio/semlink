@@ -2,6 +2,7 @@ package blueos
 
 import (
 	"encoding/json"
+	"strings"
 	"testing"
 )
 
@@ -18,6 +19,39 @@ func TestDefaultRegistrationIsBlueOSCompatible(t *testing.T) {
 	}
 	if registration.Extras["commands"] != "blocked-on-hardware" {
 		t.Fatalf("commands extra = %q", registration.Extras["commands"])
+	}
+}
+
+func TestDefaultRegistrationDeclaresCompanionMeshWithoutHardwareTransmit(t *testing.T) {
+	registration := DefaultRegistration()
+	description := strings.ToLower(registration.Description)
+	for _, want := range []string{"mavlink", "companion", "mesh"} {
+		if !strings.Contains(description, want) {
+			t.Fatalf("description %q does not declare %q", registration.Description, want)
+		}
+	}
+	if registration.Extras["runtime"] != "semlink-companion" {
+		t.Fatalf("runtime extra = %q", registration.Extras["runtime"])
+	}
+	if registration.Extras["mavlink"] != "udp-ingress" {
+		t.Fatalf("mavlink extra = %q", registration.Extras["mavlink"])
+	}
+	if registration.Extras["mesh"] != "summary-watermark-sync" {
+		t.Fatalf("mesh extra = %q", registration.Extras["mesh"])
+	}
+	if registration.Extras["commands"] != "blocked-on-hardware" {
+		t.Fatalf("commands extra = %q", registration.Extras["commands"])
+	}
+	forbidden := []string{"hardware-transmit-enabled", "command-transmit-enabled", "actuator-control"}
+	serializedExtras, err := json.Marshal(registration.Extras)
+	if err != nil {
+		t.Fatalf("Marshal extras: %v", err)
+	}
+	lower := strings.ToLower(registration.Description + " " + string(serializedExtras))
+	for _, term := range forbidden {
+		if strings.Contains(lower, term) {
+			t.Fatalf("registration declares forbidden capability %q in %s", term, lower)
+		}
 	}
 }
 

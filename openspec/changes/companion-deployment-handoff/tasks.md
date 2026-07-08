@@ -15,7 +15,7 @@
       profile
 - [x] 2.2 Extend the package smoke to verify `/api/health`,
       `/register_service`, and `/api/evidence`
-- [ ] 2.3 Add tests that package metadata declares companion/mesh behavior and
+- [x] 2.3 Add tests that package metadata declares companion/mesh behavior and
       does not declare hardware command transmit capability
 - [ ] 2.4 Document package run commands, required inputs, and release/tag
       checkpoint criteria

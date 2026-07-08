@@ -35,6 +35,7 @@ func DefaultRegistration() Registration {
 		Extras: map[string]string{
 			"runtime":  "semlink-companion",
 			"mavlink":  "udp-ingress",
+			"mesh":     "summary-watermark-sync",
 			"commands": "blocked-on-hardware",
 		},
 	}
