@@ -10,6 +10,10 @@ maintainer/company, readme, links, type, and tags. SemLink uses
 `register_service` for BlueOS discoverability, while the forward product surface
 remains local APIs and CLI/config rather than a repo-owned dashboard.
 
+The BlueOS handoff image is API/evidence-only by default. It does not build or
+bundle the historical SemGCS Svelte UI; the root demo image can keep that legacy
+surface until a later migration removes or rehomes it.
+
 Sources:
 
 - [BlueOS extension development](https://blueos.cloud/docs/latest/development/extensions/)
@@ -114,7 +118,8 @@ safe to propose.
 ## Packaging Files
 
 - `docker/blueos-extension/Dockerfile`: BlueOS-style image and labels
-- `docker/blueos-extension/entrypoint.sh`: extension runtime flags
+- `docker/blueos-extension/entrypoint.sh`: extension runtime flags with static
+  UI serving disabled by default
 - `compose.blueos.yml`: local lifecycle Compose target
 - `blueos/extension/metadata.json`: Bazaar repository metadata skeleton
 - `blueos/extension/README.md`: submission note and evidence boundary

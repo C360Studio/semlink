@@ -19,7 +19,7 @@
       does not declare hardware command transmit capability
 - [x] 2.4 Document package run commands, required inputs, and release/tag
       checkpoint criteria
-- [ ] 2.5 Plan or begin the SemGCS runtime rename/migration once package
+- [x] 2.5 Plan or begin the SemGCS runtime rename/migration once package
       readiness no longer depends on the historical UI surface
 
 ## 3. SITL And UDP Evidence

@@ -88,6 +88,17 @@ func TestBlueOSDockerLabelsDeclareCompanionMeshWithoutHardwareTransmit(t *testin
 	)
 }
 
+func TestBlueOSDockerfileDoesNotBundleHistoricalUI(t *testing.T) {
+	dockerfile := readRepoText(t, "docker", "blueos-extension", "Dockerfile")
+
+	assertTextLacks(t, strings.ToLower(dockerfile),
+		"from node",
+		"npm ci",
+		"npm run build",
+		"ui/dist",
+	)
+}
+
 func TestBlueOSComposeLoadsHandoffProfile(t *testing.T) {
 	compose := readRepoText(t, "compose.blueos.yml")
 
@@ -111,7 +122,11 @@ func TestBlueOSEntrypointLoadsMountedHandoffProfile(t *testing.T) {
 		"/data/companion.env",
 		". \"$profile_path\"",
 		"missing SemLink handoff profile",
+		"-static=${SEMLINK_STATIC_DIR:-}",
 	)
+	if strings.Contains(entrypoint, "/app/ui/dist") {
+		t.Fatal("BlueOS entrypoint should not serve the historical UI by default")
+	}
 }
 
 func TestBlueOSSmokeExportsHandoffProfileFile(t *testing.T) {
