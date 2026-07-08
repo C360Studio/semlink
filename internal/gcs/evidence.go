@@ -14,6 +14,7 @@ const (
 	EvidenceContractName               = "c360.semlink.companion.evidence"
 	EvidenceContractVersion            = "v1"
 	DefaultNodeID                      = "semlink-local"
+	DownstreamDependencyModeOptional   = "optional-downstream"
 	RawMAVLinkReplicationPolicyExclude = "excluded-by-default"
 )
 
@@ -118,18 +119,21 @@ type TAKProfileEvidence struct {
 }
 
 type DownstreamView struct {
-	Name       string   `json:"name"`
-	Owner      string   `json:"owner"`
-	Role       string   `json:"role"`
-	Optional   bool     `json:"optional"`
-	Direction  string   `json:"direction"`
-	Enabled    bool     `json:"enabled"`
-	Status     string   `json:"status"`
-	APIPaths   []string `json:"api_paths,omitempty"`
-	TargetURL  string   `json:"target_url,omitempty"`
-	Boundary   string   `json:"boundary"`
-	NoRawMesh  bool     `json:"no_raw_mesh,omitempty"`
-	NoGCSGlass bool     `json:"no_gcs_glass,omitempty"`
+	Name                 string   `json:"name"`
+	Owner                string   `json:"owner"`
+	Role                 string   `json:"role"`
+	Optional             bool     `json:"optional"`
+	DependencyMode       string   `json:"dependency_mode"`
+	RuntimeDependency    bool     `json:"runtime_dependency"`
+	RequiredForReadiness bool     `json:"required_for_readiness"`
+	Direction            string   `json:"direction"`
+	Enabled              bool     `json:"enabled"`
+	Status               string   `json:"status"`
+	APIPaths             []string `json:"api_paths,omitempty"`
+	TargetURL            string   `json:"target_url,omitempty"`
+	Boundary             string   `json:"boundary"`
+	NoRawMesh            bool     `json:"no_raw_mesh,omitempty"`
+	NoGCSGlass           bool     `json:"no_gcs_glass,omitempty"`
 }
 
 type VehicleEvidence struct {
@@ -316,40 +320,49 @@ func downstreamViews(csapiURL string) []DownstreamView {
 	}
 	return []DownstreamView{
 		{
-			Name:       "semops",
-			Owner:      "SemOps",
-			Role:       "GCS/COP glass and fusion",
-			Optional:   true,
-			Direction:  "pull-local-api",
-			Enabled:    true,
-			Status:     "available",
-			APIPaths:   []string{"/api/evidence", "/api/events", "/api/graph?entity_id={entity_id}"},
-			Boundary:   "SemOps consumes companion evidence; SemLink does not own COP/GCS glass.",
-			NoGCSGlass: true,
+			Name:                 "semops",
+			Owner:                "SemOps",
+			Role:                 "GCS/COP glass and fusion",
+			Optional:             true,
+			DependencyMode:       DownstreamDependencyModeOptional,
+			RuntimeDependency:    false,
+			RequiredForReadiness: false,
+			Direction:            "pull-local-api",
+			Enabled:              true,
+			Status:               "available",
+			APIPaths:             []string{"/api/evidence", "/api/events", "/api/graph?entity_id={entity_id}"},
+			Boundary:             "SemOps consumes companion evidence; SemLink does not own COP/GCS glass.",
+			NoGCSGlass:           true,
 		},
 		{
-			Name:       "semstreams-ui",
-			Owner:      "semstreams-ui",
-			Role:       "generic ops/debug view",
-			Optional:   true,
-			Direction:  "pull-local-api",
-			Enabled:    true,
-			Status:     "available",
-			APIPaths:   []string{"/api/evidence", "/api/snapshot", "/api/graph?entity_id={entity_id}"},
-			Boundary:   "semstreams-ui can inspect evidence without becoming a SemLink dependency.",
-			NoGCSGlass: true,
+			Name:                 "semstreams-ui",
+			Owner:                "semstreams-ui",
+			Role:                 "generic ops/debug view",
+			Optional:             true,
+			DependencyMode:       DownstreamDependencyModeOptional,
+			RuntimeDependency:    false,
+			RequiredForReadiness: false,
+			Direction:            "pull-local-api",
+			Enabled:              true,
+			Status:               "available",
+			APIPaths:             []string{"/api/evidence", "/api/snapshot", "/api/graph?entity_id={entity_id}"},
+			Boundary:             "semstreams-ui can inspect evidence without becoming a SemLink dependency.",
+			NoGCSGlass:           true,
 		},
 		{
-			Name:      "semconnect-csapi",
-			Owner:     "SemConnect",
-			Role:      "OGC API - Connected Systems standards egress",
-			Optional:  true,
-			Direction: "egress-http",
-			Enabled:   semconnectEnabled,
-			Status:    semconnectStatus,
-			TargetURL: csapiURL,
-			Boundary:  "Curated low-rate standards projection only; not mesh sync and not raw MAVLink.",
-			NoRawMesh: true,
+			Name:                 "semconnect-csapi",
+			Owner:                "SemConnect",
+			Role:                 "OGC API - Connected Systems standards egress",
+			Optional:             true,
+			DependencyMode:       DownstreamDependencyModeOptional,
+			RuntimeDependency:    false,
+			RequiredForReadiness: false,
+			Direction:            "egress-http",
+			Enabled:              semconnectEnabled,
+			Status:               semconnectStatus,
+			TargetURL:            csapiURL,
+			Boundary:             "Curated low-rate standards projection only; not mesh sync and not raw MAVLink.",
+			NoRawMesh:            true,
 		},
 	}
 }

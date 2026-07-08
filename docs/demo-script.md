@@ -99,7 +99,9 @@ curl -s http://127.0.0.1:8080/api/evidence
 ```
 
 Confirm that the `downstream` section marks SemOps and semstreams-ui as optional
-pull consumers, and SemConnect as optional standards egress.
+pull consumers, SemConnect as optional standards egress, and all three as
+`dependency_mode=optional-downstream`,
+`required_for_readiness=false`, and `runtime_dependency=false`.
 
 ## Validation Backstop
 

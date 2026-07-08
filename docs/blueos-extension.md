@@ -40,7 +40,8 @@ The smoke defaults to `configs/handoff/companion.env.example`. Override with
 profile. Compose mounts that file as `/data/companion.env`, and the BlueOS-style
 entrypoint sources it before translating environment values into runtime flags.
 The evidence check asserts the SemLink companion evidence contract, configured
-profile, handoff node ID, and fail-closed hardware transmit posture.
+profile, handoff node ID, optional downstream posture, and fail-closed hardware
+transmit posture.
 
 ## Required Inputs
 
@@ -131,6 +132,8 @@ and has an image/lifecycle shape that can be tested locally.
 
 It does not publish to Docker Hub or the BlueOS Bazaar. It also does not access
 Navigator hardware or enable hardware command transmit; those remain separate
-OpenSpec tasks.
+OpenSpec tasks. SemOps, semstreams-ui, and SemConnect are downstream consumers
+of the local evidence/API surface, not services the package must start for
+readiness.
 
 [blueos-extensions-repo]: https://raw.githubusercontent.com/bluerobotics/BlueOS-Extensions-Repository/master/README.md

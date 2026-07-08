@@ -39,6 +39,8 @@ COP fusion.
 - `downstream`: optional downstream consumers and their boundary metadata.
   SemOps and semstreams-ui pull local API evidence. SemConnect is disabled
   until `CS_API_URL` is configured, then acts as curated standards egress.
+  Each entry declares `dependency_mode=optional-downstream`,
+  `runtime_dependency=false`, and `required_for_readiness=false`.
 - `vehicles`: current MAVLink-derived vehicle summaries with MAVLink vehicle
   type, graph revision, indexing profile, link status, battery, position, and
   evidence class.
@@ -61,4 +63,6 @@ ops/debug views. SemConnect remains the optional standards-facing egress path.
 
 The `downstream` section is deliberately declarative. It lets external tools
 discover whether a consumer path is available without making that consumer a
-required runtime dependency for SemLink.
+required runtime dependency for SemLink. `enabled=true` means the local path is
+available or configured; it does not mean the consumer is required for package
+readiness.

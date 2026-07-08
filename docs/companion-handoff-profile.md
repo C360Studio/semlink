@@ -97,7 +97,13 @@ validator accepts only absolute `http` or `https` peer URLs.
 
 SemOps and semstreams-ui are optional pull consumers of local APIs. They do not
 need profile endpoints to be available; `/api/evidence` already declares them
-as downstream consumers.
+as downstream consumers. SemConnect remains optional standards egress: setting
+`CS_API_URL` enables that egress path, but none of SemOps, semstreams-ui, or
+SemConnect are runtime dependencies or package readiness requirements.
+
+The machine-readable evidence posture for each of those entries is
+`dependency_mode=optional-downstream`, `runtime_dependency=false`, and
+`required_for_readiness=false`.
 
 ### Command Posture
 
@@ -198,4 +204,5 @@ at least one MAVLink-derived vehicle with a `vehicle_type`.
 This profile is a handoff contract, not a hardware-control authorization. It
 keeps SemLink focused on local companion APIs, configuration, and evidence.
 SemOps owns COP/GCS glass, semstreams-ui can inspect generic ops/debug state,
-and SemConnect remains optional standards egress.
+and SemConnect remains optional standards egress. Package readiness is proven
+by SemLink local APIs and evidence, not by starting any downstream consumer.

@@ -182,15 +182,27 @@ func TestHandleEvidenceReturnsExternalConsumerContract(t *testing.T) {
 		t.Fatalf("profile simulator = %#v", body.Profile.Simulator)
 	}
 	semops, ok := downstreamByName(body.Downstream, "semops")
-	if !ok || !semops.Optional || semops.Direction != "pull-local-api" || !semops.Enabled || !semops.NoGCSGlass {
+	if !ok {
+		t.Fatalf("semops downstream missing: %#v", body.Downstream)
+	}
+	requireOptionalDownstream(t, semops)
+	if semops.Direction != "pull-local-api" || !semops.Enabled || !semops.NoGCSGlass {
 		t.Fatalf("semops downstream = %#v, ok=%v", semops, ok)
 	}
 	semstreamsUI, ok := downstreamByName(body.Downstream, "semstreams-ui")
-	if !ok || !semstreamsUI.Optional || semstreamsUI.Status != "available" || !semstreamsUI.NoGCSGlass {
+	if !ok {
+		t.Fatalf("semstreams-ui downstream missing: %#v", body.Downstream)
+	}
+	requireOptionalDownstream(t, semstreamsUI)
+	if semstreamsUI.Status != "available" || !semstreamsUI.NoGCSGlass {
 		t.Fatalf("semstreams-ui downstream = %#v, ok=%v", semstreamsUI, ok)
 	}
 	semconnect, ok := downstreamByName(body.Downstream, "semconnect-csapi")
-	if !ok || !semconnect.Optional || !semconnect.Enabled || semconnect.Status != "configured" || !semconnect.NoRawMesh {
+	if !ok {
+		t.Fatalf("semconnect downstream missing: %#v", body.Downstream)
+	}
+	requireOptionalDownstream(t, semconnect)
+	if !semconnect.Enabled || semconnect.Status != "configured" || !semconnect.NoRawMesh {
 		t.Fatalf("semconnect downstream = %#v, ok=%v", semconnect, ok)
 	}
 	if len(body.Vehicles) != 1 || body.Vehicles[0].EvidenceClass != "mavlink-current-state" {
@@ -279,6 +291,16 @@ func TestEvidenceMarksProfileNotConfiguredWhenNoProfileIsSupplied(t *testing.T) 
 	if body.Profile.Status != "not-configured" {
 		t.Fatalf("profile status = %q, want not-configured", body.Profile.Status)
 	}
+	for _, downstream := range body.Downstream {
+		requireOptionalDownstream(t, downstream)
+	}
+	semconnect, ok := downstreamByName(body.Downstream, "semconnect-csapi")
+	if !ok {
+		t.Fatalf("semconnect downstream missing: %#v", body.Downstream)
+	}
+	if semconnect.Enabled || semconnect.Status != "disabled" {
+		t.Fatalf("semconnect downstream = %#v", semconnect)
+	}
 }
 
 func TestEvidenceMarksSemConnectConfiguredOnlyWhenCSAPIURLIsSet(t *testing.T) {
@@ -300,6 +322,7 @@ func TestEvidenceMarksSemConnectConfiguredOnlyWhenCSAPIURLIsSet(t *testing.T) {
 	if !ok {
 		t.Fatalf("semconnect downstream missing: %#v", body.Downstream)
 	}
+	requireOptionalDownstream(t, semconnect)
 	if !semconnect.Enabled || semconnect.Status != "configured" || semconnect.TargetURL != "http://127.0.0.1:48080" {
 		t.Fatalf("semconnect downstream = %#v", semconnect)
 	}
@@ -332,4 +355,14 @@ func downstreamByName(values []DownstreamView, name string) (DownstreamView, boo
 		}
 	}
 	return DownstreamView{}, false
+}
+
+func requireOptionalDownstream(t *testing.T, value DownstreamView) {
+	t.Helper()
+	if !value.Optional ||
+		value.DependencyMode != DownstreamDependencyModeOptional ||
+		value.RuntimeDependency ||
+		value.RequiredForReadiness {
+		t.Fatalf("downstream dependency posture = %#v", value)
+	}
 }

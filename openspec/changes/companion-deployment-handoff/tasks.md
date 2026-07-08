@@ -36,7 +36,7 @@
 - [x] 4.1 Add static mesh peer configuration to the handoff profile and expose
       mesh posture/peer count in evidence
 - [x] 4.2 Keep raw MAVLink exclusion visible in the handoff evidence contract
-- [ ] 4.3 Keep SemOps, semstreams-ui, and SemConnect metadata optional and
+- [x] 4.3 Keep SemOps, semstreams-ui, and SemConnect metadata optional and
       downstream in handoff docs and evidence
 - [x] 4.4 Add a draft SemOps v0 readback adapter using MAVLink-native contract
       fixtures without CS API in the hot path
