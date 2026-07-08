@@ -11,7 +11,7 @@
 
 ## 2. Package Readiness
 
-- [ ] 2.1 Wire the BlueOS-style entrypoint and Compose smoke to the handoff
+- [x] 2.1 Wire the BlueOS-style entrypoint and Compose smoke to the handoff
       profile
 - [ ] 2.2 Extend the package smoke to verify `/api/health`,
       `/register_service`, and `/api/evidence`

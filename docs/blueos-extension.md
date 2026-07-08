@@ -18,7 +18,7 @@ Sources:
 ## Local Lifecycle Smoke
 
 The local smoke runs the extension container with embedded SemStreams runtime
-and verifies:
+using the companion handoff profile, then verifies:
 
 - `/api/health`
 - `/register_service`
@@ -30,11 +30,10 @@ scripts/blueos-extension-smoke.sh
 The smoke expects a sibling SemStreams checkout. Override with
 `SEMSTREAMS_ROOT=/path/to/semstreams` when needed.
 
-Use `configs/handoff/companion.env.example` as the companion handoff profile
-for node identity, MAVLink UDP input, local runtime, mesh peers, and downstream
-consumer posture. The current smoke consumes the already-wired environment
-fields; parser validation and full profile wiring are tracked by OpenSpec
-change `companion-deployment-handoff`.
+The smoke defaults to `configs/handoff/companion.env.example`. Override with
+`SEMLINK_HANDOFF_PROFILE_FILE=/path/to/companion.env` to run a copied local
+profile. Compose mounts that file as `/data/companion.env`, and the BlueOS-style
+entrypoint sources it before translating environment values into runtime flags.
 
 ## Packaging Files
 

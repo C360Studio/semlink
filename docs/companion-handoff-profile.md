@@ -12,11 +12,9 @@ configs/handoff/companion.env.example
 ```
 
 Task 1.2 defined the profile contract. Task 1.3 adds parser validation in
-`internal/handoff`, and task 1.4 exposes active profile metadata through
-`/api/evidence`. Full BlueOS entrypoint and Compose smoke wiring remains a
-later task in `companion-deployment-handoff`. This document labels fields that
-are already consumed by current scripts versus fields that are reserved for the
-next implementation slices.
+`internal/handoff`, task 1.4 exposes active profile metadata through
+`/api/evidence`, and task 2.1 wires the BlueOS-style entrypoint plus local
+Compose smoke to load this profile.
 
 ## Profile Fields
 
@@ -24,14 +22,14 @@ next implementation slices.
 
 | Field | Status | Purpose |
 | --- | --- | --- |
-| `SEMLINK_NODE_ID` | planned | Stable companion node ID, for example `boat-alpha`. |
-| `SEMLINK_VEHICLE_ID` | planned | Local vehicle/profile ID when a single node represents one boat. |
-| `SEMLINK_CALLSIGN` | planned | Human-readable boat callsign for evidence and demos. |
+| `SEMLINK_NODE_ID` | wired through handoff profile | Stable companion node ID, for example `boat-alpha`. |
+| `SEMLINK_VEHICLE_ID` | wired through handoff profile | Local vehicle/profile ID when a single node represents one boat. |
+| `SEMLINK_CALLSIGN` | wired through handoff profile | Human-readable boat callsign for evidence and demos. |
 
-The current evidence API can carry a node ID through `gcs.ServerOptions`, but
-`cmd/semgcs-demo` does not yet expose `-node-id`. The handoff validator rejects
-blank or whitespace-separated identity tokens, and `/api/evidence` exposes the
-accepted identity under `profile`.
+The current evidence API carries identity from the loaded handoff profile
+through `gcs.ServerOptions`. The handoff validator rejects blank or
+whitespace-separated identity tokens, and `/api/evidence` exposes the accepted
+identity under `profile`.
 
 ### Local API
 
@@ -131,11 +129,13 @@ adapter path, not the core companion deployment proof.
 For a local BlueOS-style package smoke:
 
 ```bash
-set -a
-. configs/handoff/companion.env.example
-set +a
 scripts/blueos-extension-smoke.sh
 ```
+
+The smoke defaults to `configs/handoff/companion.env.example`. To use a local
+copy, set `SEMLINK_HANDOFF_PROFILE_FILE=/path/to/companion.env` before running
+the script. The Compose target mounts that file at `/data/companion.env`, and
+the BlueOS-style entrypoint sources it before starting the companion service.
 
 For a no-Gazebo SITL/UDP proof, start SemLink with
 `SEMLINK_MAVLINK_UDP_LISTEN=:14550`, then run:

@@ -1,6 +1,20 @@
 #!/usr/bin/env sh
 set -eu
 
+profile_path="${SEMLINK_HANDOFF_PROFILE:-}"
+if [ -z "$profile_path" ] && [ -f /data/companion.env ]; then
+  profile_path="/data/companion.env"
+fi
+if [ -n "$profile_path" ]; then
+  if [ ! -f "$profile_path" ]; then
+    echo "missing SemLink handoff profile: $profile_path" >&2
+    exit 64
+  fi
+  set -a
+  . "$profile_path"
+  set +a
+fi
+
 exec /app/semgcs-demo \
   "-listen=${SEMLINK_HTTP_LISTEN:-:80}" \
   "-static=/app/ui/dist" \

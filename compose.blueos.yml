@@ -5,12 +5,12 @@ services:
       dockerfile: docker/blueos-extension/Dockerfile
       additional_contexts:
         semstreams: ${SEMSTREAMS_ROOT:-../semstreams}
+    env_file:
+      - ${SEMLINK_HANDOFF_PROFILE_FILE:-./configs/handoff/companion.env.example}
     environment:
-      SEMLINK_EMBEDDED_NATS: "true"
-      SEMLINK_HTTP_LISTEN: ":80"
-      SEMLINK_VEHICLES: "${SEMLINK_VEHICLES:-1}"
-      SEMLINK_HZ: "${SEMLINK_HZ:-5}"
-      SEMLINK_MAVLINK_UDP_LISTEN: "${SEMLINK_MAVLINK_UDP_LISTEN:-}"
+      SEMLINK_HANDOFF_PROFILE: "/data/companion.env"
+    volumes:
+      - ${SEMLINK_HANDOFF_PROFILE_FILE:-./configs/handoff/companion.env.example}:/data/companion.env:ro
     ports:
       - "${SEMLINK_BLUEOS_HOST_PORT:-8081}:80"
     healthcheck:

@@ -6,6 +6,19 @@ SEMLINK_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
 DEMO_ROOT="$(cd "$SEMLINK_ROOT/.." && pwd)"
 SEMSTREAMS_ROOT="${SEMSTREAMS_ROOT:-$DEMO_ROOT/semstreams}"
 COMPOSE_PROJECT_NAME="${COMPOSE_PROJECT_NAME:-semlink-blueos-smoke}"
+SEMLINK_HANDOFF_PROFILE_FILE="${SEMLINK_HANDOFF_PROFILE_FILE:-$SEMLINK_ROOT/configs/handoff/companion.env.example}"
+
+if [[ ! -f "$SEMLINK_HANDOFF_PROFILE_FILE" ]]; then
+  echo "missing SemLink handoff profile: $SEMLINK_HANDOFF_PROFILE_FILE" >&2
+  echo "copy configs/handoff/companion.env.example or set SEMLINK_HANDOFF_PROFILE_FILE=/path/to/profile.env" >&2
+  exit 1
+fi
+
+set -a
+# shellcheck disable=SC1090
+. "$SEMLINK_HANDOFF_PROFILE_FILE"
+set +a
+
 SEMLINK_BLUEOS_HOST_PORT="${SEMLINK_BLUEOS_HOST_PORT:-8081}"
 
 if [[ ! -f "$SEMSTREAMS_ROOT/go.mod" ]]; then
@@ -26,6 +39,7 @@ fi
 
 export SEMLINK_ROOT
 export SEMSTREAMS_ROOT
+export SEMLINK_HANDOFF_PROFILE_FILE
 export SEMLINK_BLUEOS_HOST_PORT
 
 cleanup() {
