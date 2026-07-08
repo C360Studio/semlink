@@ -11,9 +11,10 @@ import (
 )
 
 const (
-	EvidenceContractName    = "c360.semlink.companion.evidence"
-	EvidenceContractVersion = "v1"
-	DefaultNodeID           = "semlink-local"
+	EvidenceContractName               = "c360.semlink.companion.evidence"
+	EvidenceContractVersion            = "v1"
+	DefaultNodeID                      = "semlink-local"
+	RawMAVLinkReplicationPolicyExclude = "excluded-by-default"
 )
 
 type EvidenceBundle struct {
@@ -157,6 +158,7 @@ type MeshEvidence struct {
 	WatermarkCount                int                  `json:"watermark_count"`
 	Watermarks                    []mesh.CellWatermark `json:"watermarks"`
 	RawMAVLinkReplicatesByDefault bool                 `json:"raw_mavlink_replicates_by_default"`
+	RawMAVLinkReplicationPolicy   string               `json:"raw_mavlink_replication_policy"`
 }
 
 type RuleTraceView struct {
@@ -416,6 +418,7 @@ func (s *Server) meshEvidence(now time.Time) MeshEvidence {
 		ConfiguredPeerCount:           len(meshPeers),
 		ConfiguredPeers:               meshPeers,
 		RawMAVLinkReplicatesByDefault: mesh.SourceKindRawMAVLink.ReplicatesOverMeshByDefault(),
+		RawMAVLinkReplicationPolicy:   RawMAVLinkReplicationPolicyExclude,
 	}
 	if s.mesh == nil {
 		return evidence

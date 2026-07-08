@@ -45,7 +45,8 @@ COP fusion.
 - `mesh`: mesh deployment posture (`single-node` or `static-peers`),
   configured peer count/URLs, configured/unconfigured summary-index status,
   summary count, watermark count, current watermarks, and the explicit
-  `raw_mavlink_replicates_by_default` false claim.
+  `raw_mavlink_replicates_by_default=false` and
+  `raw_mavlink_replication_policy=excluded-by-default` claims.
 - `rule_traces`: append-limited rule trace summaries with rule ID/version,
   node, vehicle, decision, suggested action, posture, input hash, and input
   count.

@@ -122,6 +122,10 @@ func TestUDPEvidenceSmokeProjectsExternalMAVLinkState(t *testing.T) {
 	if body.Node.RawFrames != 1 || body.Node.DecodedFrames != 1 {
 		t.Fatalf("node frame metrics = raw:%d decoded:%d", body.Node.RawFrames, body.Node.DecodedFrames)
 	}
+	if body.Mesh.RawMAVLinkReplicatesByDefault ||
+		body.Mesh.RawMAVLinkReplicationPolicy != RawMAVLinkReplicationPolicyExclude {
+		t.Fatalf("raw MAVLink mesh policy = %#v", body.Mesh)
+	}
 	if len(body.Vehicles) != 1 {
 		t.Fatalf("vehicles = %#v", body.Vehicles)
 	}

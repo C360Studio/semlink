@@ -213,6 +213,9 @@ func TestHandleEvidenceReturnsExternalConsumerContract(t *testing.T) {
 	if body.Mesh.RawMAVLinkReplicatesByDefault {
 		t.Fatalf("raw MAVLink should not replicate by default")
 	}
+	if body.Mesh.RawMAVLinkReplicationPolicy != RawMAVLinkReplicationPolicyExclude {
+		t.Fatalf("raw MAVLink replication policy = %q", body.Mesh.RawMAVLinkReplicationPolicy)
+	}
 	if len(body.RuleTraces) != 1 || body.RuleTraces[0].InputCount != 1 {
 		t.Fatalf("rule traces = %#v", body.RuleTraces)
 	}
@@ -253,7 +256,9 @@ func TestEvidenceReportsSingleNodeMeshPostureWithoutPeers(t *testing.T) {
 	if body.Mesh.Posture != "single-node" ||
 		body.Mesh.ConfiguredPeerCount != 0 ||
 		len(body.Mesh.ConfiguredPeers) != 0 ||
-		body.Mesh.Status != "not-configured" {
+		body.Mesh.Status != "not-configured" ||
+		body.Mesh.RawMAVLinkReplicatesByDefault ||
+		body.Mesh.RawMAVLinkReplicationPolicy != RawMAVLinkReplicationPolicyExclude {
 		t.Fatalf("mesh evidence = %#v", body.Mesh)
 	}
 }
