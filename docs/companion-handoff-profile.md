@@ -80,10 +80,11 @@ prove package readiness, but they do not prove autopilot wire compatibility.
 
 | Field | Status | Purpose |
 | --- | --- | --- |
-| `SEMLINK_MESH_PEERS` | planned | Comma-separated absolute peer base URLs. |
+| `SEMLINK_MESH_PEERS` | wired | Comma-separated absolute peer base URLs. |
 
-Leave `SEMLINK_MESH_PEERS` empty for a single-node handoff. Task 4.1 should
-wire this into mesh posture evidence and peer count reporting. The handoff
+Leave `SEMLINK_MESH_PEERS` empty for a single-node handoff. When static peers
+are supplied, `/api/evidence` reports `profile.mesh.mode`, `mesh.posture`,
+`mesh.configured_peer_count`, and `mesh.configured_peers`. The handoff
 validator accepts only absolute `http` or `https` peer URLs.
 
 ### Downstream Consumers

@@ -33,7 +33,7 @@
 
 ## 4. Mesh And Downstream Visibility
 
-- [ ] 4.1 Add static mesh peer configuration to the handoff profile and expose
+- [x] 4.1 Add static mesh peer configuration to the handoff profile and expose
       mesh posture/peer count in evidence
 - [ ] 4.2 Keep raw MAVLink exclusion visible in the handoff evidence contract
 - [ ] 4.3 Keep SemOps, semstreams-ui, and SemConnect metadata optional and

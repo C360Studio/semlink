@@ -202,6 +202,14 @@ func TestHandleEvidenceReturnsExternalConsumerContract(t *testing.T) {
 	if body.Mesh.Status != "configured" || body.Mesh.SummaryCount != 1 || body.Mesh.WatermarkCount != 1 {
 		t.Fatalf("mesh = %#v", body.Mesh)
 	}
+	if body.Mesh.Posture != "static-peers" || body.Mesh.ConfiguredPeerCount != 2 {
+		t.Fatalf("mesh posture = %#v", body.Mesh)
+	}
+	if len(body.Mesh.ConfiguredPeers) != 2 ||
+		body.Mesh.ConfiguredPeers[0] != "http://boat-bravo.local:8081" ||
+		body.Mesh.ConfiguredPeers[1] != "http://boat-charlie.local:8081" {
+		t.Fatalf("configured mesh peers = %#v", body.Mesh.ConfiguredPeers)
+	}
 	if body.Mesh.RawMAVLinkReplicatesByDefault {
 		t.Fatalf("raw MAVLink should not replicate by default")
 	}
@@ -213,6 +221,40 @@ func TestHandleEvidenceReturnsExternalConsumerContract(t *testing.T) {
 	}
 	if body.Commands[1].Gate == nil || body.Commands[1].Gate.HardwareBlock == nil {
 		t.Fatalf("command gate evidence missing hardware block: %#v", body.Commands)
+	}
+}
+
+func TestEvidenceReportsSingleNodeMeshPostureWithoutPeers(t *testing.T) {
+	profile, err := handoff.ParseEnv(map[string]string{
+		handoff.EnvNodeID:                  "boat-alpha",
+		handoff.EnvVehicleID:               "boat-alpha",
+		handoff.EnvCallsign:                "BOAT-ALPHA",
+		handoff.EnvHTTPListen:              ":8081",
+		handoff.EnvEmbeddedNATS:            "true",
+		handoff.EnvNATSURL:                 "nats://demo",
+		handoff.EnvMAVLinkUDPListen:        ":14550",
+		handoff.EnvMAVLinkUDPHost:          "127.0.0.1",
+		handoff.EnvMAVLinkUDPPort:          "14550",
+		handoff.EnvMeshPeers:               "",
+		handoff.EnvCommandRuntimeMode:      string(handoff.CommandRuntimeHardwareReadonly),
+		handoff.EnvHardwareTransmitEnabled: "false",
+	})
+	if err != nil {
+		t.Fatalf("ParseEnv() error = %v", err)
+	}
+
+	server := NewServer(NewStore("nats://demo", true), nil, "", ServerOptions{
+		HandoffProfile: &profile,
+	})
+	body := server.EvidenceBundle(time.Now().UTC())
+	if body.Profile.Mesh.Mode != "single-node" || body.Profile.Mesh.PeerCount != 0 || len(body.Profile.Mesh.Peers) != 0 {
+		t.Fatalf("profile mesh = %#v", body.Profile.Mesh)
+	}
+	if body.Mesh.Posture != "single-node" ||
+		body.Mesh.ConfiguredPeerCount != 0 ||
+		len(body.Mesh.ConfiguredPeers) != 0 ||
+		body.Mesh.Status != "not-configured" {
+		t.Fatalf("mesh evidence = %#v", body.Mesh)
 	}
 }
 

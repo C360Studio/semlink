@@ -150,6 +150,9 @@ type VehicleEvidence struct {
 
 type MeshEvidence struct {
 	Status                        string               `json:"status"`
+	Posture                       string               `json:"posture"`
+	ConfiguredPeerCount           int                  `json:"configured_peer_count"`
+	ConfiguredPeers               []string             `json:"configured_peers,omitempty"`
 	SummaryCount                  int                  `json:"summary_count"`
 	WatermarkCount                int                  `json:"watermark_count"`
 	Watermarks                    []mesh.CellWatermark `json:"watermarks"`
@@ -245,10 +248,7 @@ func profileEvidence(profile *handoff.Profile) ProfileEvidence {
 	if !simulatorEnabled {
 		simulatorSource = string(TelemetrySourceExternalMAVLinkUDP)
 	}
-	meshMode := "off"
-	if len(profile.MeshPeers) > 0 {
-		meshMode = "static-peers"
-	}
+	meshPosture, meshPeers := meshPostureEvidence(profile)
 	hardwareStatus := "blocked"
 	if profile.HardwareTransmitEnabled {
 		hardwareStatus = "enabled"
@@ -280,9 +280,9 @@ func profileEvidence(profile *handoff.Profile) ProfileEvidence {
 			Source:   simulatorSource,
 		},
 		Mesh: MeshProfileEvidence{
-			Mode:      meshMode,
-			PeerCount: len(profile.MeshPeers),
-			Peers:     append([]string(nil), profile.MeshPeers...),
+			Mode:      meshPosture,
+			PeerCount: len(meshPeers),
+			Peers:     meshPeers,
 		},
 		Downstream: DownstreamProfileEvidence{
 			CSAPIConfigured: profile.CSAPIURL != "",
@@ -409,8 +409,12 @@ func vehicleEvidence(vehicles []VehicleView) []VehicleEvidence {
 }
 
 func (s *Server) meshEvidence(now time.Time) MeshEvidence {
+	meshPosture, meshPeers := meshPostureEvidence(s.handoffProfile)
 	evidence := MeshEvidence{
 		Status:                        "not-configured",
+		Posture:                       meshPosture,
+		ConfiguredPeerCount:           len(meshPeers),
+		ConfiguredPeers:               meshPeers,
 		RawMAVLinkReplicatesByDefault: mesh.SourceKindRawMAVLink.ReplicatesOverMeshByDefault(),
 	}
 	if s.mesh == nil {
@@ -422,6 +426,13 @@ func (s *Server) meshEvidence(now time.Time) MeshEvidence {
 	evidence.WatermarkCount = len(watermarks.Entries)
 	evidence.Watermarks = watermarks.Entries
 	return evidence
+}
+
+func meshPostureEvidence(profile *handoff.Profile) (string, []string) {
+	if profile == nil || len(profile.MeshPeers) == 0 {
+		return "single-node", nil
+	}
+	return "static-peers", append([]string(nil), profile.MeshPeers...)
 }
 
 func commandEvidence(commands []CommandView, gates []CommandGateView) []CommandEvidence {

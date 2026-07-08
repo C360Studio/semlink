@@ -42,9 +42,10 @@ COP fusion.
 - `vehicles`: current MAVLink-derived vehicle summaries with MAVLink vehicle
   type, graph revision, indexing profile, link status, battery, position, and
   evidence class.
-- `mesh`: configured/unconfigured mesh status, summary count, watermark count,
-  current watermarks, and the explicit `raw_mavlink_replicates_by_default`
-  false claim.
+- `mesh`: mesh deployment posture (`single-node` or `static-peers`),
+  configured peer count/URLs, configured/unconfigured summary-index status,
+  summary count, watermark count, current watermarks, and the explicit
+  `raw_mavlink_replicates_by_default` false claim.
 - `rule_traces`: append-limited rule trace summaries with rule ID/version,
   node, vehicle, decision, suggested action, posture, input hash, and input
   count.
