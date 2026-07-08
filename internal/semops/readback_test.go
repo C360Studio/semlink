@@ -87,7 +87,11 @@ func TestClientPostsReadbackRequestWithoutMintingTrustedHeaders(t *testing.T) {
 		t.Fatalf("response mismatch\ngot:  %#v\nwant: %#v", got, expectedResponse)
 	}
 	if got.NativeExecutionAllowed || got.CompanionTransmitAllowed {
-		t.Fatalf("transmit posture = native %v companion %v, want both false", got.NativeExecutionAllowed, got.CompanionTransmitAllowed)
+		t.Fatalf(
+			"transmit posture = native %v companion %v, want both false",
+			got.NativeExecutionAllowed,
+			got.CompanionTransmitAllowed,
+		)
 	}
 }
 
@@ -142,6 +146,114 @@ func TestRequestUsesMAVLinkConstants(t *testing.T) {
 	if request.RequestedMessageID != uint32(mavlink.MessageAutopilotVersion) {
 		t.Fatalf("requested_message_id = %d, want %d", request.RequestedMessageID, mavlink.MessageAutopilotVersion)
 	}
+}
+
+func TestCSAPIProjectionFixturePreservesNativeContractFacts(t *testing.T) {
+	request := loadFixture[ReadbackRequest](t, "request.accepted.json")
+	projection := loadFixture[csapiProjectionFixture](t, "csapi-projection.accepted.json")
+
+	if projection.Contract != "c360.semops.semlink.csapi-projection.v0" ||
+		projection.SourceContract != ReadbackContractV0 ||
+		projection.ClaimScope != "csapi-projection-fixture-only" ||
+		projection.CSAPIScore != "amber" {
+		t.Fatalf("projection header = %+v", projection)
+	}
+	companion := projection.systemByRole("companion")
+	if companion.ID == "" || companion.SourceRef != "semlink://blue-boat-01" {
+		t.Fatalf("companion system = %+v", companion)
+	}
+	target := projection.systemByRole("target")
+	if target.ID != "c360.edge.cop.mavlink.asset.system-42" ||
+		target.MAVLink.TargetSystemID != int(request.TargetSystemID) ||
+		target.MAVLink.TargetComponentID != int(request.TargetComponentID) {
+		t.Fatalf("target system = %+v", target)
+	}
+	if projection.Command.Status != "accepted" ||
+		projection.Command.CorrelationID != request.CorrelationID ||
+		projection.Command.IdempotencyKey != request.IdempotencyKey ||
+		projection.Command.SourceRef != request.SourceRef {
+		t.Fatalf("command projection = %+v", projection.Command)
+	}
+	desired := projection.Command.Desired
+	if desired.CommandID != request.CommandID ||
+		desired.RequestedMessageID != request.RequestedMessageID ||
+		desired.TargetSystemID != int(request.TargetSystemID) ||
+		desired.TargetComponentID != int(request.TargetComponentID) ||
+		desired.Command != "MAV_CMD_REQUEST_MESSAGE" ||
+		desired.Message != "AUTOPILOT_VERSION" {
+		t.Fatalf("desired projection = %+v", desired)
+	}
+	governance := projection.Command.Governance
+	if governance.AuthorityScope != "semlink.readback.intent" ||
+		governance.ClaimScope != "semlink-companion-command-intent-only" ||
+		governance.NativeExecutionAllowed ||
+		governance.CompanionTransmitAllowed ||
+		governance.Duplicate ||
+		governance.Mutations != 1 {
+		t.Fatalf("governance projection = %+v", governance)
+	}
+	if len(projection.Observations) != 1 ||
+		projection.Observations[0].ObservedProperty != "AUTOPILOT_VERSION" ||
+		!projection.Observations[0].Deferred {
+		t.Fatalf("observation projection = %+v", projection.Observations)
+	}
+}
+
+type csapiProjectionFixture struct {
+	Contract       string                 `json:"contract"`
+	SourceContract string                 `json:"source_contract"`
+	ClaimScope     string                 `json:"claim_scope"`
+	CSAPIScore     string                 `json:"csapi_score"`
+	Systems        []projectedSystem      `json:"systems"`
+	Command        projectedCommand       `json:"command"`
+	Observations   []projectedObservation `json:"observations"`
+}
+
+func (p csapiProjectionFixture) systemByRole(role string) projectedSystem {
+	for _, system := range p.Systems {
+		if system.Role == role {
+			return system
+		}
+	}
+	return projectedSystem{}
+}
+
+type projectedSystem struct {
+	Role      string `json:"role"`
+	ID        string `json:"id"`
+	SourceRef string `json:"source_ref"`
+	MAVLink   struct {
+		TargetSystemID    int `json:"target_system_id"`
+		TargetComponentID int `json:"target_component_id"`
+	} `json:"mavlink"`
+}
+
+type projectedCommand struct {
+	Status         string `json:"status"`
+	CorrelationID  string `json:"correlation_id"`
+	IdempotencyKey string `json:"idempotency_key"`
+	SourceRef      string `json:"source_ref"`
+	Desired        struct {
+		Command            string `json:"command"`
+		Message            string `json:"message"`
+		CommandID          uint16 `json:"command_id"`
+		RequestedMessageID uint32 `json:"requested_message_id"`
+		TargetSystemID     int    `json:"target_system_id"`
+		TargetComponentID  int    `json:"target_component_id"`
+	} `json:"desired"`
+	Governance struct {
+		AuthorityScope           string `json:"authority_scope"`
+		ClaimScope               string `json:"claim_scope"`
+		NativeExecutionAllowed   bool   `json:"native_execution_allowed"`
+		CompanionTransmitAllowed bool   `json:"companion_transmit_allowed"`
+		Duplicate                bool   `json:"duplicate"`
+		Mutations                int    `json:"mutations"`
+	} `json:"governance"`
+}
+
+type projectedObservation struct {
+	ObservedProperty string `json:"observed_property"`
+	Deferred         bool   `json:"deferred"`
 }
 
 func loadFixture[T any](t *testing.T, name string) T {

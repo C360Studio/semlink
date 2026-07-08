@@ -18,6 +18,10 @@ SemOps v0 contract examples in `testdata/contracts/semlink-companion-readback-v0
 The fixtures are mirrored locally so SemLink tests do not depend on a sibling
 checkout or an unpushed SemOps branch.
 
+The mirrored `csapi-projection.accepted.json` fixture is a hold-out review
+artifact for SemOps/SemConnect interop. SemLink tests keep it in sync with the
+native readback facts, but the adapter does not consume CS API in the hot path.
+
 ## Boundary
 
 The adapter does not mint trusted SemOps operator headers. Production trust
