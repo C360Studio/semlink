@@ -20,7 +20,7 @@ services:
 
   ardupilot-sitl:
     build:
-      context: .
+      context: ${SEMLINK_ROOT:-.}
       dockerfile: docker/ardupilot-sitl/Dockerfile
       args:
         ARDUPILOT_REF: ${ARDUPILOT_REF:-master}

@@ -137,12 +137,18 @@ copy, set `SEMLINK_HANDOFF_PROFILE_FILE=/path/to/companion.env` before running
 the script. The Compose target mounts that file at `/data/companion.env`, and
 the BlueOS-style entrypoint sources it before starting the companion service.
 
-For a no-Gazebo SITL/UDP proof, start SemLink with
-`SEMLINK_MAVLINK_UDP_LISTEN=:14550`, then run:
+For a no-Gazebo SITL/UDP proof, both ArduRover launchers source the same
+handoff profile. Start SemLink with the profile's
+`SEMLINK_MAVLINK_UDP_LISTEN`, then run:
 
 ```bash
 scripts/ardurover-sitl-lane.sh
 ```
+
+The local launcher sends `sim_vehicle.py` traffic to
+`SEMLINK_MAVLINK_UDP_HOST:SEMLINK_MAVLINK_UDP_PORT`. The Docker wrapper sources
+the profile before Compose interpolation and maps the ArduPilot container to
+the same profile port.
 
 The proof readback should use:
 

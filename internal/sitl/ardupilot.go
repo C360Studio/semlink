@@ -3,6 +3,8 @@ package sitl
 import (
 	"errors"
 	"fmt"
+
+	"github.com/c360studio/semlink/internal/handoff"
 )
 
 type Frame string
@@ -46,6 +48,13 @@ func DefaultArduRoverLane() ArduPilotLaneConfig {
 		WipeEEPROM: true,
 		NoMAVProxy: true,
 	}
+}
+
+func ArduRoverLaneFromHandoffProfile(profile handoff.Profile) ArduPilotLaneConfig {
+	cfg := DefaultArduRoverLane()
+	cfg.OutputHost = profile.MAVLinkUDPHost
+	cfg.OutputPort = profile.MAVLinkUDPPort
+	return cfg
 }
 
 func (c ArduPilotLaneConfig) Validate() error {

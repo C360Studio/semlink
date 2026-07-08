@@ -14,17 +14,22 @@ Sources:
 
 ## Local Run
 
-Start SemLink with a UDP MAVLink listener:
+Both SITL wrappers load the companion handoff profile before launching. The
+default profile is `configs/handoff/companion.env.example`; use
+`SEMLINK_HANDOFF_PROFILE_FILE=/path/to/companion.env` to point at a local copy.
+
+Start SemLink with the profile's UDP MAVLink listener:
 
 ```bash
-MAVLINK_UDP_LISTEN=:14550 go run ./cmd/semgcs-demo -mavlink-udp=:14550
+set -a
+. configs/handoff/companion.env.example
+set +a
+go run ./cmd/semgcs-demo -mavlink-udp="${SEMLINK_MAVLINK_UDP_LISTEN}"
 ```
 
-For the companion handoff profile, the matching field is
-`SEMLINK_MAVLINK_UDP_LISTEN=:14550` in
-`configs/handoff/companion.env.example`.
-
-In a second terminal, run ArduRover SITL:
+In a second terminal, run ArduRover SITL. The launcher reads
+`SEMLINK_MAVLINK_UDP_HOST` and `SEMLINK_MAVLINK_UDP_PORT` from the same
+profile and passes them to `sim_vehicle.py` as a headless UDP client target:
 
 ```bash
 scripts/ardurover-sitl-lane.sh
@@ -40,7 +45,10 @@ ARDUPILOT_FRAME=rover-skid scripts/ardurover-sitl-lane.sh
 ## Docker Run
 
 The ArduPilot image is intentionally separate from the SemLink image because it
-is large and only needed for this fidelity lane.
+is large and only needed for this fidelity lane. The wrapper sources the
+handoff profile before Compose interpolation so SemLink listens on
+`SEMLINK_MAVLINK_UDP_LISTEN` and ArduPilot sends to the matching
+`SEMLINK_MAVLINK_UDP_PORT` inside the Compose network.
 
 ```bash
 scripts/ardurover-sitl-compose-up.sh
@@ -55,7 +63,8 @@ ARDUPILOT_REF=master ARDUPILOT_FRAME=sailboat-motor \
 
 The wrapper follows the existing demo compose shape, so it expects sibling
 `semconnect` and `semstreams` checkouts. Override their locations with
-`SEMCONNECT_ROOT` and `SEMSTREAMS_ROOT`.
+`SEMCONNECT_ROOT` and `SEMSTREAMS_ROOT`. Override the profile with
+`SEMLINK_HANDOFF_PROFILE_FILE=/path/to/companion.env`.
 
 ## Evidence Boundary
 
