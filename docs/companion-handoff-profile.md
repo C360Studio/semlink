@@ -120,6 +120,11 @@ authorization and safety evidence. The handoff validator rejects
 command-intent graph writes and recorded in `/api/evidence.commands[]` as a
 `hardware_block` with `scope=companion-deployment-handoff`.
 
+Simulator command gates remain useful as evidence, but they are not hardware
+authorization. `/api/evidence.commands[]` preserves compact simulator-only
+preflight, ACK, and post-state proof while keeping
+`hardware_transmit_authorized=false`.
+
 ### TAK Bridge
 
 | Field | Status | Purpose |

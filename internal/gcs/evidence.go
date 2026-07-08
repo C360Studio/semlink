@@ -183,18 +183,22 @@ type RuleTraceView struct {
 }
 
 type CommandGateView struct {
-	Accepted          bool                                       `json:"accepted"`
-	Status            string                                     `json:"status"`
-	StartedAt         time.Time                                  `json:"started_at"`
-	RuntimeMode       commandgate.RuntimeMode                    `json:"runtime_mode,omitempty"`
-	SafetyProfile     string                                     `json:"safety_profile,omitempty"`
-	TargetEntity      string                                     `json:"target_entity,omitempty"`
-	Verb              string                                     `json:"verb,omitempty"`
-	RequestedBy       string                                     `json:"requested_by,omitempty"`
-	FrameCount        int                                        `json:"frame_count"`
-	ACKCount          int                                        `json:"ack_count"`
-	PostStateObserved bool                                       `json:"post_state_observed"`
-	HardwareBlock     *commandgate.HardwareTransmitBlockEvidence `json:"hardware_block,omitempty"`
+	Accepted                   bool                                       `json:"accepted"`
+	Status                     string                                     `json:"status"`
+	StartedAt                  time.Time                                  `json:"started_at"`
+	RuntimeMode                commandgate.RuntimeMode                    `json:"runtime_mode,omitempty"`
+	SafetyProfile              string                                     `json:"safety_profile,omitempty"`
+	TargetEntity               string                                     `json:"target_entity,omitempty"`
+	Verb                       string                                     `json:"verb,omitempty"`
+	RequestedBy                string                                     `json:"requested_by,omitempty"`
+	PreflightAccepted          bool                                       `json:"preflight_accepted"`
+	SimulatorOnly              bool                                       `json:"simulator_only"`
+	FrameCount                 int                                        `json:"frame_count"`
+	ACKCount                   int                                        `json:"ack_count"`
+	ACKAccepted                bool                                       `json:"ack_accepted"`
+	PostStateObserved          bool                                       `json:"post_state_observed"`
+	HardwareTransmitAuthorized bool                                       `json:"hardware_transmit_authorized"`
+	HardwareBlock              *commandgate.HardwareTransmitBlockEvidence `json:"hardware_block,omitempty"`
 }
 
 type CommandEvidence struct {

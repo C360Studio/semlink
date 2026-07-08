@@ -47,7 +47,7 @@
 
 - [x] 5.1 Ensure handoff packages reject hardware command transmit with
       handoff-scope evidence
-- [ ] 5.2 Preserve simulator-only command evidence without authorizing hardware
+- [x] 5.2 Preserve simulator-only command evidence without authorizing hardware
       transmit
 - [x] 5.3 Add tests for handoff fail-closed command behavior
 

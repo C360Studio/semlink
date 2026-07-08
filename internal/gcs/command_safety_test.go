@@ -10,6 +10,7 @@ import (
 
 	"github.com/c360studio/semlink/internal/commandgate"
 	"github.com/c360studio/semlink/internal/handoff"
+	"github.com/c360studio/semlink/internal/mavlink"
 	"github.com/c360studio/semlink/internal/projector"
 )
 
@@ -77,6 +78,93 @@ func TestHandoffCommandsRejectHardwareTransmitAndRecordEvidence(t *testing.T) {
 	}
 	assertHandoffHardwareBlock(t, *evidence.Commands[0].Gate.HardwareBlock, targetEntity)
 	if evidence.Profile.Command.RuntimeMode != string(handoff.CommandRuntimeHardwareReadonly) ||
+		evidence.Profile.Command.HardwareTransmitEnabled ||
+		evidence.Profile.Command.HardwareTransmitStatus != "blocked" {
+		t.Fatalf("profile command evidence = %#v", evidence.Profile.Command)
+	}
+}
+
+func TestEvidencePreservesSimulatorCommandGateWithoutHardwareAuthorization(t *testing.T) {
+	now := time.Now().UTC().Truncate(time.Second)
+	targetEntity := "c360.semlink.robotics.fleet.boat.boat-042"
+	store := NewStore("nats://demo", true)
+	profile := handoff.DefaultProfile()
+	profile.CommandRuntimeMode = handoff.CommandRuntimeSimulator
+	profile.HardwareTransmitEnabled = false
+
+	store.RecordCommandGateResult(commandgate.TransmitResult{
+		Accepted:  true,
+		Status:    "accepted",
+		StartedAt: now,
+		Preflight: commandgate.PreflightResult{
+			Accepted: true,
+			Evidence: commandgate.PreflightEvidence{
+				RuntimeMode:              commandgate.RuntimeModeSimulator,
+				SafetyProfile:            commandgate.DefaultSafetyProfile,
+				TargetEntity:             targetEntity,
+				Verb:                     commandgate.VerbRequestAutopilotVersion,
+				RequestedBy:              "simulator-harness",
+				SenderSystemID:           250,
+				SenderComponentID:        191,
+				Attempts:                 1,
+				MaxAttempts:              3,
+				LocalOverride:            true,
+				ACKRequired:              true,
+				PostStatePollingRequired: true,
+				SimulatorConfirmed:       true,
+				AbortReady:               true,
+			},
+		},
+		Frames: []commandgate.FrameEvidence{{
+			Attempt:            1,
+			Sequence:           12,
+			MessageID:          mavlink.MessageCommandLong,
+			CommandID:          mavlink.MAVCmdRequestMessage,
+			RequestedMessageID: mavlink.MessageAutopilotVersion,
+			SenderSystemID:     250,
+			SenderComponentID:  191,
+			TargetSystemID:     42,
+			TargetComponentID:  defaultAutopilotComponent,
+			FrameBytes:         42,
+		}},
+		ACKs: []commandgate.ACKEvidence{{
+			Attempt:           1,
+			CommandID:         mavlink.MAVCmdRequestMessage,
+			Result:            mavlink.MAVResultAccepted,
+			SourceSystemID:    42,
+			SourceComponentID: defaultAutopilotComponent,
+			ObservedAt:        now,
+		}},
+		PostState: commandgate.PostStateEvidence{
+			Observed:     true,
+			TargetEntity: targetEntity,
+			Summary:      "AUTOPILOT_VERSION observed",
+			ObservedAt:   now,
+		},
+	})
+
+	server := NewServer(store, nil, "", ServerOptions{
+		HandoffProfile: &profile,
+	})
+	evidence := server.EvidenceBundle(now)
+	if len(evidence.Commands) != 1 {
+		t.Fatalf("evidence commands = %#v, want one command gate", evidence.Commands)
+	}
+	gate := evidence.Commands[0].Gate
+	if evidence.Commands[0].Kind != "command-gate" || gate == nil {
+		t.Fatalf("evidence command = %#v, want command gate", evidence.Commands[0])
+	}
+	if !gate.PreflightAccepted ||
+		!gate.SimulatorOnly ||
+		gate.FrameCount != 1 ||
+		gate.ACKCount != 1 ||
+		!gate.ACKAccepted ||
+		!gate.PostStateObserved ||
+		gate.HardwareTransmitAuthorized ||
+		gate.HardwareBlock != nil {
+		t.Fatalf("simulator command gate = %#v", gate)
+	}
+	if evidence.Profile.Command.RuntimeMode != string(handoff.CommandRuntimeSimulator) ||
 		evidence.Profile.Command.HardwareTransmitEnabled ||
 		evidence.Profile.Command.HardwareTransmitStatus != "blocked" {
 		t.Fatalf("profile command evidence = %#v", evidence.Profile.Command)

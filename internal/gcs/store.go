@@ -277,13 +277,17 @@ func (s *Store) RecordCommandGateResult(result commandgate.TransmitResult) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	view := CommandGateView{
-		Accepted:          result.Accepted,
-		Status:            result.Status,
-		StartedAt:         result.StartedAt,
-		FrameCount:        len(result.Frames),
-		ACKCount:          len(result.ACKs),
-		PostStateObserved: result.PostState.Observed,
-		HardwareBlock:     result.HardwareBlock,
+		Accepted:                   result.Accepted,
+		Status:                     result.Status,
+		StartedAt:                  result.StartedAt,
+		PreflightAccepted:          result.Preflight.Accepted,
+		SimulatorOnly:              result.Preflight.Evidence.RuntimeMode == commandgate.RuntimeModeSimulator,
+		FrameCount:                 len(result.Frames),
+		ACKCount:                   len(result.ACKs),
+		ACKAccepted:                commandACKAccepted(result.ACKs),
+		PostStateObserved:          result.PostState.Observed,
+		HardwareTransmitAuthorized: false,
+		HardwareBlock:              result.HardwareBlock,
 	}
 	if result.Preflight.Evidence.TargetEntity != "" {
 		view.RuntimeMode = result.Preflight.Evidence.RuntimeMode
@@ -303,6 +307,15 @@ func (s *Store) RecordCommandGateResult(result commandgate.TransmitResult) {
 	if len(s.commandGates) > 50 {
 		s.commandGates = s.commandGates[:50]
 	}
+}
+
+func commandACKAccepted(acks []commandgate.ACKEvidence) bool {
+	for _, ack := range acks {
+		if ack.Accepted() {
+			return true
+		}
+	}
+	return false
 }
 
 func (s *Store) Snapshot() Snapshot {

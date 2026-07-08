@@ -53,7 +53,9 @@ COP fusion.
   node, vehicle, decision, suggested action, posture, input hash, and input
   count.
 - `commands`: command intents and command-gate evidence, including simulator
-  gate status or hardware block evidence. In the MVP handoff,
+  gate status or hardware block evidence. Simulator gates preserve compact
+  `preflight_accepted`, `ack_accepted`, and `post_state_observed` proof while
+  keeping `hardware_transmit_authorized=false`. In the MVP handoff,
   hardware-readonly command attempts are rejected before command-intent writes
   and recorded with `hardware_block.scope=companion-deployment-handoff`.
 
