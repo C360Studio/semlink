@@ -23,7 +23,7 @@ Compose smoke to load this profile.
 | Field | Status | Purpose |
 | --- | --- | --- |
 | `SEMLINK_NODE_ID` | wired through handoff profile | Stable companion node ID, for example `boat-alpha`. |
-| `SEMLINK_VEHICLE_ID` | wired through handoff profile | Local vehicle/profile ID when a single node represents one boat. |
+| `SEMLINK_VEHICLE_ID` | wired through handoff profile | Single-boat vehicle/profile ID. |
 | `SEMLINK_CALLSIGN` | wired through handoff profile | Human-readable boat callsign for evidence and demos. |
 
 The current evidence API carries identity from the loaded handoff profile
@@ -124,7 +124,27 @@ authorization and safety evidence. The handoff validator rejects
 The companion handoff profile keeps TAK disabled by default. TAK remains an
 adapter path, not the core companion deployment proof.
 
-## Usage Sketch
+## Hardware-Free Proof Path
+
+Use these lanes in increasing fidelity:
+
+- Local UDP evidence test:
+  `go test ./internal/gcs -run TestUDPEvidenceSmokeProjectsExternalMAVLinkState`
+- BlueOS-style package smoke: `scripts/blueos-extension-smoke.sh`
+- Local ArduRover SITL lane: `scripts/ardurover-sitl-lane.sh`
+- Dockerized ArduRover/SemLink lane: `scripts/ardurover-sitl-compose-up.sh`
+
+The local UDP evidence test is the fastest handoff proof. It opens a UDP
+listener, sends one MAVLink heartbeat frame, verifies that the internal
+simulator is disabled for an external MAVLink input, and reads the projected
+vehicle state back through `/api/evidence`. It does not require Docker,
+ArduPilot, BlueOS, sibling checkouts, or physical Navigator hardware.
+
+The BlueOS-style package smoke proves the deployable container lifecycle and
+local API surface. It starts the package with the companion profile, then checks
+`/api/health`, `/register_service`, and `/api/evidence`. That smoke may use the
+simulator fallback unless the profile points at an external MAVLink source, so
+the SITL lanes remain the autopilot wire-compatibility proof.
 
 For a local BlueOS-style package smoke:
 
@@ -138,7 +158,8 @@ the script. The Compose target mounts that file at `/data/companion.env`, and
 the BlueOS-style entrypoint sources it before starting the companion service.
 
 For a no-Gazebo SITL/UDP proof, both ArduRover launchers source the same
-handoff profile. Start SemLink with the profile's
+handoff profile. The local lane requires ArduPilot's `sim_vehicle.py` on
+`PATH`, but does not require Docker or Gazebo. Start SemLink with the profile's
 `SEMLINK_MAVLINK_UDP_LISTEN`, then run:
 
 ```bash
@@ -148,13 +169,28 @@ scripts/ardurover-sitl-lane.sh
 The local launcher sends `sim_vehicle.py` traffic to
 `SEMLINK_MAVLINK_UDP_HOST:SEMLINK_MAVLINK_UDP_PORT`. The Docker wrapper sources
 the profile before Compose interpolation and maps the ArduPilot container to
-the same profile port.
+the same profile port:
+
+```bash
+scripts/ardurover-sitl-compose-up.sh
+```
+
+The Docker lane is operator-invoked because it builds/runs the ArduPilot SITL
+container and expects sibling `semconnect` and `semstreams` checkouts. Use it
+when the local host does not have `sim_vehicle.py`, or when the SemLink,
+SemConnect, and SemStreams demo stack should be exercised together.
 
 The proof readback should use:
 
 ```bash
 curl -s http://127.0.0.1:${SEMLINK_BLUEOS_HOST_PORT:-8081}/api/evidence
 ```
+
+For an external MAVLink proof, the evidence should show
+`profile.mavlink.external_input_configured=true`,
+`profile.simulator.enabled=false`,
+`profile.simulator.source=external-mavlink-udp`, increasing frame counters, and
+at least one MAVLink-derived vehicle with a `vehicle_type`.
 
 ## Boundary
 

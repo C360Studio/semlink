@@ -66,6 +66,30 @@ The wrapper follows the existing demo compose shape, so it expects sibling
 `SEMCONNECT_ROOT` and `SEMSTREAMS_ROOT`. Override the profile with
 `SEMLINK_HANDOFF_PROFILE_FILE=/path/to/companion.env`.
 
+## Evidence Checks
+
+The local and Docker lanes are successful when `/api/evidence` shows that
+SemLink is using external MAVLink input and has projected current vehicle state:
+
+```bash
+curl -s http://127.0.0.1:${SEMLINK_BLUEOS_HOST_PORT:-8081}/api/evidence
+```
+
+The expected handoff signals are:
+
+- `profile.mavlink.external_input_configured=true`
+- `profile.simulator.enabled=false`
+- `profile.simulator.source=external-mavlink-udp`
+- `node.raw_frames` and `node.decoded_frames` greater than zero
+- at least one `vehicles[]` item with `vehicle_type` set from the MAVLink
+  heartbeat
+
+The quick non-Docker proof for those signals is:
+
+```bash
+go test ./internal/gcs -run TestUDPEvidenceSmokeProjectsExternalMAVLinkState
+```
+
 ## Evidence Boundary
 
 This lane proves that SemLink can listen for ArduPilot Rover/boat MAVLink over
