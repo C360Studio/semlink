@@ -21,6 +21,7 @@ func TestHandleEvidenceReturnsExternalConsumerContract(t *testing.T) {
 		ID:               "c360.semlink.robotics.fleet.drone.uav-003",
 		Callsign:         "BOAT-003",
 		SystemID:         3,
+		VehicleType:      "surface-boat",
 		Mode:             "guided",
 		FlightStatus:     "active",
 		LinkStatus:       "online",
@@ -177,6 +178,9 @@ func TestHandleEvidenceReturnsExternalConsumerContract(t *testing.T) {
 		body.Profile.Command.HardwareTransmitStatus != "blocked" {
 		t.Fatalf("profile command = %#v", body.Profile.Command)
 	}
+	if body.Profile.Simulator.Enabled || body.Profile.Simulator.Source != string(TelemetrySourceExternalMAVLinkUDP) {
+		t.Fatalf("profile simulator = %#v", body.Profile.Simulator)
+	}
 	semops, ok := downstreamByName(body.Downstream, "semops")
 	if !ok || !semops.Optional || semops.Direction != "pull-local-api" || !semops.Enabled || !semops.NoGCSGlass {
 		t.Fatalf("semops downstream = %#v, ok=%v", semops, ok)
@@ -191,6 +195,9 @@ func TestHandleEvidenceReturnsExternalConsumerContract(t *testing.T) {
 	}
 	if len(body.Vehicles) != 1 || body.Vehicles[0].EvidenceClass != "mavlink-current-state" {
 		t.Fatalf("vehicles = %#v", body.Vehicles)
+	}
+	if body.Vehicles[0].VehicleType != "surface-boat" {
+		t.Fatalf("vehicle type = %q", body.Vehicles[0].VehicleType)
 	}
 	if body.Mesh.Status != "configured" || body.Mesh.SummaryCount != 1 || body.Mesh.WatermarkCount != 1 {
 		t.Fatalf("mesh = %#v", body.Mesh)

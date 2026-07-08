@@ -26,7 +26,7 @@
 
 - [x] 3.1 Connect the ArduRover/boat SITL lane to the handoff profile without
       requiring Gazebo
-- [ ] 3.2 Add a local UDP evidence smoke or test that proves external MAVLink
+- [x] 3.2 Add a local UDP evidence smoke or test that proves external MAVLink
       disables the internal simulator and updates `/api/evidence`
 - [ ] 3.3 Document the hardware-free handoff proof path and any operator-invoked
       Docker/SITL lanes

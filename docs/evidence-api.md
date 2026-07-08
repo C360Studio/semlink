@@ -34,12 +34,14 @@ COP fusion.
 - `profile`: handoff profile metadata for identity, HTTP listen address,
   BlueOS host port, SemStreams mode, MAVLink UDP input, simulator fallback,
   static mesh peers, optional CS API egress, command posture, and TAK bridge
-  posture.
+  posture. When external MAVLink UDP is configured, `profile.simulator.enabled`
+  is `false` and `profile.simulator.source` is `external-mavlink-udp`.
 - `downstream`: optional downstream consumers and their boundary metadata.
   SemOps and semstreams-ui pull local API evidence. SemConnect is disabled
   until `CS_API_URL` is configured, then acts as curated standards egress.
-- `vehicles`: current MAVLink-derived vehicle summaries with graph revision,
-  indexing profile, link status, battery, position, and evidence class.
+- `vehicles`: current MAVLink-derived vehicle summaries with MAVLink vehicle
+  type, graph revision, indexing profile, link status, battery, position, and
+  evidence class.
 - `mesh`: configured/unconfigured mesh status, summary count, watermark count,
   current watermarks, and the explicit `raw_mavlink_replicates_by_default`
   false claim.

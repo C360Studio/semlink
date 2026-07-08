@@ -3,6 +3,7 @@ package gcs
 import (
 	"context"
 	"log/slog"
+	"strings"
 	"time"
 
 	"github.com/c360studio/semlink/internal/mavlink"
@@ -19,6 +20,13 @@ type DemoConfig struct {
 	Logger           *slog.Logger
 }
 
+type TelemetrySourceMode string
+
+const (
+	TelemetrySourceInternalSimulator  TelemetrySourceMode = "internal-simulator"
+	TelemetrySourceExternalMAVLinkUDP TelemetrySourceMode = "external-mavlink-udp"
+)
+
 type Demo struct {
 	cfg       DemoConfig
 	runtime   *semruntime.Runtime
@@ -26,6 +34,13 @@ type Demo struct {
 	store     *Store
 	buffer    buffer.Buffer[mavlink.RawFrame]
 	logger    *slog.Logger
+}
+
+func (cfg DemoConfig) TelemetrySourceMode() TelemetrySourceMode {
+	if strings.TrimSpace(cfg.MAVLinkUDPListen) != "" {
+		return TelemetrySourceExternalMAVLinkUDP
+	}
+	return TelemetrySourceInternalSimulator
 }
 
 func NewDemo(cfg DemoConfig, rt *semruntime.Runtime, store *Store) (*Demo, error) {
@@ -57,7 +72,7 @@ func NewDemo(cfg DemoConfig, rt *semruntime.Runtime, store *Store) (*Demo, error
 }
 
 func (d *Demo) Start(ctx context.Context) {
-	if d.cfg.MAVLinkUDPListen != "" {
+	if d.cfg.TelemetrySourceMode() == TelemetrySourceExternalMAVLinkUDP {
 		go d.runUDPSource(ctx)
 	} else {
 		go d.runSimulator(ctx)

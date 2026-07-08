@@ -83,9 +83,11 @@ type MAVLinkProfileEvidence struct {
 }
 
 type SimulatorProfileEvidence struct {
-	Vehicles int `json:"vehicles"`
-	Hz       int `json:"hz"`
-	Buffer   int `json:"buffer"`
+	Vehicles int    `json:"vehicles"`
+	Hz       int    `json:"hz"`
+	Buffer   int    `json:"buffer"`
+	Enabled  bool   `json:"enabled"`
+	Source   string `json:"source"`
 }
 
 type MeshProfileEvidence struct {
@@ -133,6 +135,7 @@ type VehicleEvidence struct {
 	EntityID         string    `json:"entity_id"`
 	Callsign         string    `json:"callsign"`
 	SystemID         uint8     `json:"system_id"`
+	VehicleType      string    `json:"vehicle_type,omitempty"`
 	Mode             string    `json:"mode"`
 	FlightStatus     string    `json:"flight_status"`
 	LinkStatus       string    `json:"link_status"`
@@ -237,6 +240,11 @@ func profileEvidence(profile *handoff.Profile) ProfileEvidence {
 	if profile == nil {
 		return ProfileEvidence{Status: "not-configured"}
 	}
+	simulatorEnabled := profile.MAVLinkUDPListen == ""
+	simulatorSource := string(TelemetrySourceInternalSimulator)
+	if !simulatorEnabled {
+		simulatorSource = string(TelemetrySourceExternalMAVLinkUDP)
+	}
 	meshMode := "off"
 	if len(profile.MeshPeers) > 0 {
 		meshMode = "static-peers"
@@ -268,6 +276,8 @@ func profileEvidence(profile *handoff.Profile) ProfileEvidence {
 			Vehicles: profile.Vehicles,
 			Hz:       profile.Hz,
 			Buffer:   profile.Buffer,
+			Enabled:  simulatorEnabled,
+			Source:   simulatorSource,
 		},
 		Mesh: MeshProfileEvidence{
 			Mode:      meshMode,
@@ -382,6 +392,7 @@ func vehicleEvidence(vehicles []VehicleView) []VehicleEvidence {
 			EntityID:         vehicle.EntityID,
 			Callsign:         vehicle.Callsign,
 			SystemID:         vehicle.SystemID,
+			VehicleType:      vehicle.VehicleType,
 			Mode:             vehicle.Mode,
 			FlightStatus:     vehicle.FlightStatus,
 			LinkStatus:       vehicle.LinkStatus,

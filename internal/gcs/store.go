@@ -28,6 +28,7 @@ type VehicleView struct {
 	EntityID         string    `json:"entity_id"`
 	Callsign         string    `json:"callsign"`
 	SystemID         uint8     `json:"system_id"`
+	VehicleType      string    `json:"vehicle_type"`
 	Armed            bool      `json:"armed"`
 	Mode             string    `json:"mode"`
 	FlightStatus     string    `json:"flight_status"`
@@ -145,6 +146,7 @@ func (s *Store) ApplyProjectorSnapshot(vehicles []projector.VehicleStatePayload,
 			EntityID:         v.ID,
 			Callsign:         v.Callsign,
 			SystemID:         v.SystemID,
+			VehicleType:      v.VehicleType,
 			Armed:            v.Armed,
 			Mode:             v.Mode,
 			FlightStatus:     v.FlightStatus,
