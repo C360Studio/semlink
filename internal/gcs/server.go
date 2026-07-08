@@ -166,6 +166,9 @@ func (s *Server) handleCommands(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "invalid command request", http.StatusBadRequest)
 		return
 	}
+	if s.rejectHandoffHardwareCommand(w, req.VehicleID, req.Verb) {
+		return
+	}
 	cmd, err := s.commands.Submit(r.Context(), req.VehicleID, req.Verb)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)

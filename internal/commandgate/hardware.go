@@ -13,6 +13,7 @@ const (
 	HardwareTransmitRequiredChange     = "accepted OpenSpec change defining hardware authorization and safety evidence"
 	HardwareTransmitBlockStatus        = "hardware-transmit-blocked"
 	HardwareTransmitCompanionMeshScope = "pivot-companion-mesh"
+	HardwareTransmitHandoffScope       = "companion-deployment-handoff"
 )
 
 type HardwareTransmitBlocker struct {

@@ -56,7 +56,9 @@ Run package smokes from the SemLink checkout with these local inputs:
 
 The profile must keep `SEMLINK_HARDWARE_TRANSMIT_ENABLED=false` for this
 handoff. The validator rejects `true`, and the smoke checks evidence for the
-blocked hardware-transmit posture.
+blocked hardware-transmit posture. In the default `hardware-readonly` command
+mode, local command attempts are rejected before command-intent writes and
+recorded as handoff-scope hardware block evidence.
 
 ## Run Commands
 

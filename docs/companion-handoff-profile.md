@@ -109,13 +109,16 @@ The machine-readable evidence posture for each of those entries is
 
 | Field | Status | Purpose |
 | --- | --- | --- |
-| `SEMLINK_COMMAND_RUNTIME_MODE` | planned | Handoff command posture, initially `hardware-readonly`. |
-| `SEMLINK_HARDWARE_TRANSMIT_ENABLED` | planned | Must remain `false` for this OpenSpec change. |
+| `SEMLINK_COMMAND_RUNTIME_MODE` | wired | Handoff command posture, initially `hardware-readonly`. |
+| `SEMLINK_HARDWARE_TRANSMIT_ENABLED` | wired fail-closed | Must remain `false` for this OpenSpec change. |
 
 The deployable handoff may run near hardware, but hardware MAVLink command
 transmit remains blocked until a later accepted OpenSpec change defines
 authorization and safety evidence. The handoff validator rejects
-`SEMLINK_HARDWARE_TRANSMIT_ENABLED=true`.
+`SEMLINK_HARDWARE_TRANSMIT_ENABLED=true`. When the package runs in
+`hardware-readonly` mode, local `/api/commands` attempts are rejected before
+command-intent graph writes and recorded in `/api/evidence.commands[]` as a
+`hardware_block` with `scope=companion-deployment-handoff`.
 
 ### TAK Bridge
 
