@@ -48,6 +48,11 @@ curl -s http://127.0.0.1:8080/api/evidence
 The evidence bundle includes downstream metadata for SemOps, semstreams-ui, and
 the optional SemConnect CS API bridge.
 
+The BlueOS-style companion handoff package and its release/tag checkpoint are
+documented in [`docs/blueos-extension.md`](docs/blueos-extension.md). Start
+there for `scripts/blueos-extension-smoke.sh`, required handoff profile inputs,
+and the evidence gates for a package checkpoint.
+
 If the script reports a missing SemConnect pinned vendor tree, stage it once:
 
 ```bash

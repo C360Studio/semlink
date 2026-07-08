@@ -38,6 +38,79 @@ entrypoint sources it before translating environment values into runtime flags.
 The evidence check asserts the SemLink companion evidence contract, configured
 profile, handoff node ID, and fail-closed hardware transmit posture.
 
+## Required Inputs
+
+Run package smokes from the SemLink checkout with these local inputs:
+
+- Docker with Compose v2 access.
+- A sibling SemStreams checkout, or `SEMSTREAMS_ROOT=/path/to/semstreams`.
+- A handoff profile file. The default is
+  `configs/handoff/companion.env.example`; use a copied profile for local
+  boats or alternate ports.
+- A free host HTTP port for `SEMLINK_BLUEOS_HOST_PORT`, defaulting to `8081`.
+
+The profile must keep `SEMLINK_HARDWARE_TRANSMIT_ENABLED=false` for this
+handoff. The validator rejects `true`, and the smoke checks evidence for the
+blocked hardware-transmit posture.
+
+## Run Commands
+
+Preflight Compose interpolation without building the image:
+
+```bash
+docker compose -f compose.blueos.yml config
+```
+
+Run the full local BlueOS-style lifecycle smoke:
+
+```bash
+scripts/blueos-extension-smoke.sh
+```
+
+Run with explicit checkouts, profile, and host port:
+
+```bash
+SEMSTREAMS_ROOT=/path/to/semstreams \
+SEMLINK_HANDOFF_PROFILE_FILE=/path/to/companion.env \
+SEMLINK_BLUEOS_HOST_PORT=8081 \
+scripts/blueos-extension-smoke.sh
+```
+
+Inspect the package endpoints while the Compose service is running:
+
+```bash
+curl -fsS http://127.0.0.1:${SEMLINK_BLUEOS_HOST_PORT:-8081}/api/health
+curl -fsS http://127.0.0.1:${SEMLINK_BLUEOS_HOST_PORT:-8081}/register_service
+curl -fsS http://127.0.0.1:${SEMLINK_BLUEOS_HOST_PORT:-8081}/api/evidence
+```
+
+Tear down any leftover local smoke container:
+
+```bash
+docker compose -p semlink-blueos-smoke -f compose.blueos.yml down --remove-orphans
+```
+
+## Release / Tag Checkpoint
+
+Do not tag or publish a companion handoff checkpoint until the release note or
+tag proposal records:
+
+- `go test ./...`
+- `go build ./...`
+- `openspec validate --all --strict`
+- `docker compose -f compose.blueos.yml config`
+- `scripts/blueos-extension-smoke.sh`, or an explicit Docker-environment
+  waiver such as a resolver/cache timeout before SemLink starts
+- The evidence contract observed at `/api/evidence`
+- The BlueOS registration metadata observed at `/register_service`
+- The exact handoff profile used, with secrets removed if a copied local file
+  was used
+- A statement that hardware MAVLink command transmit remains disabled
+
+This checkpoint does not publish to Docker Hub or the BlueOS Bazaar. It is a
+repo-local readiness gate for deciding whether a later publish/tag action is
+safe to propose.
+
 ## Packaging Files
 
 - `docker/blueos-extension/Dockerfile`: BlueOS-style image and labels
