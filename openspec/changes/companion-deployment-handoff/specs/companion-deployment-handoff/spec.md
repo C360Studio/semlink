@@ -54,19 +54,23 @@ repeatable local evidence rather than calendar or manual judgment alone.
 ### Requirement: Handoff Does Not Require External Glass
 
 The companion handoff MUST NOT require SemOps, semstreams-ui, or a SemLink-owned
-GCS dashboard to prove local readiness.
+GCS dashboard to prove local readiness. It also MUST NOT require CS API or
+SemConnect as a companion package runtime dependency for the MVP handoff.
 
 #### Scenario: Package runs standalone
 
 - **WHEN** the handoff package starts with local SemStreams runtime enabled
 - **THEN** local health, registration, and evidence APIs are sufficient to
   verify companion readiness
-- **AND** SemOps and semstreams-ui remain optional downstream consumers
+- **AND** SemOps, semstreams-ui, and SemConnect remain optional downstream
+  consumers rather than startup, runtime, or readiness requirements
 
 ### Requirement: SemOps Readback Adapter Uses Native Draft Contract
 
 SemLink SHALL keep any native adapter for the SemOps companion readback v0
-contract inside the draft-gated SemOps/SemLink review boundary.
+contract inside the draft-gated SemOps/SemLink review boundary. For the MVP
+companion handoff, SemLink SHALL keep this path MAVLink-native and MUST NOT
+host, consume, or project CS API/SemConnect in order to submit readback intent.
 
 #### Scenario: Companion submits SemOps readback intent
 
@@ -78,6 +82,8 @@ contract inside the draft-gated SemOps/SemLink review boundary.
 - **AND** the request does not require SemLink to send `target_asset_id` or
   prove the SemOps born target
 - **AND** the request does not require CS API/SemConnect in the hot path
+- **AND** mirrored CS API projection fixtures are treated as downstream interop
+  evidence only, not SemLink runtime inputs or outputs
 
 #### Scenario: Companion adapter handles SemOps authority boundary
 
@@ -87,3 +93,13 @@ contract inside the draft-gated SemOps/SemLink review boundary.
   own trusted-header translation
 - **AND** accepted or duplicate responses preserve no-native/no-companion
   transmit posture for the MVP path
+
+#### Scenario: Standards projection remains downstream
+
+- **WHEN** SemOps or SemConnect needs a CS API representation of accepted
+  readback intent
+- **THEN** that projection is owned at the SemOps/SemConnect standards edge
+- **AND** SemLink does not add CS API client, server, or projection runtime
+  coupling for the MVP companion handoff
+- **AND** moving CS API runtime responsibility into SemLink requires a later
+  accepted OpenSpec change

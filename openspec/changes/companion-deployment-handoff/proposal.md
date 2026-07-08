@@ -20,6 +20,8 @@ handoff.
   checks for the handoff.
 - Keep SemOps and semstreams-ui as downstream consumers of local APIs rather
   than dependencies of the package.
+- Keep CS API/SemConnect standards projection downstream with SemOps/SemConnect
+  for MVP rather than adding SemLink runtime coupling.
 - Add a draft native SemOps readback adapter for the v0 companion contract
   without making CS API/SemConnect a hot-path dependency.
 - Preserve the existing hardware command-transmit block; this handoff may run

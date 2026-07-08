@@ -30,6 +30,9 @@ read-only inspection, while preserving the hardware transmit block.
 - No BlueOS Bazaar publication or external registry release in this change.
 - No SemLink-owned GCS/dashboard expansion.
 - No SemOps or semstreams-ui runtime dependency.
+- No CS API or SemConnect runtime dependency for the SemLink MVP companion
+  handoff; standards projection stays downstream with SemOps/SemConnect unless
+  a later accepted OpenSpec change moves that boundary.
 - No MAVSDK adoption.
 
 ## Decisions

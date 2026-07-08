@@ -22,6 +22,11 @@ The mirrored `csapi-projection.accepted.json` fixture is a hold-out review
 artifact for SemOps/SemConnect interop. SemLink tests keep it in sync with the
 native readback facts, but the adapter does not consume CS API in the hot path.
 
+The 2026-07-08 recheck against the pushed SemOps
+`codex/cop-component-telemetry` baseline found no fixture drift. SemOps owns
+the standards projection edge for MVP; SemLink keeps this path native and does
+not add CS API runtime coupling for the companion handoff.
+
 ## Boundary
 
 The adapter does not mint trusted SemOps operator headers. Production trust

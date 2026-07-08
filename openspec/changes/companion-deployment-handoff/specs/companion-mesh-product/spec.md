@@ -20,6 +20,8 @@ evidence for external operator surfaces without adding repo-owned GCS glass.
 - **THEN** they describe those systems as optional downstream consumers
 - **AND** they do not describe them as required runtime dependencies for
   companion package readiness
+- **AND** they do not describe CS API or SemConnect as SemLink MVP runtime
+  responsibilities
 
 ### Requirement: Historical SemGCS Runtime Surface Is Migrated
 
@@ -45,3 +47,21 @@ capability before equivalent handoff evidence exists.
   package readiness without a SemLink-owned dashboard
 - **AND** MAVLink ingest, local evidence, optional CS API egress, and optional
   TAK bridge behavior remain available or are explicitly rehomed before removal
+
+### Requirement: MVP Handoff Keeps Standards Projection Downstream
+
+For the MVP companion handoff, SemLink SHALL keep CS API and SemConnect outside
+the companion runtime path. Standards projection remains a downstream
+SemOps/SemConnect edge unless a later accepted OpenSpec change explicitly moves
+that responsibility.
+
+#### Scenario: CS API projection is requested during MVP handoff work
+
+- **WHEN** SemLink handoff work needs to describe CS API, SemConnect, or
+  standards-facing readback projection
+- **THEN** the work treats that projection as downstream SemOps/SemConnect
+  ownership
+- **AND** SemLink remains responsible for native MAVLink companion behavior,
+  local evidence APIs, configuration, and native SemOps readback intent
+- **AND** SemLink does not add CS API runtime coupling as part of the MVP
+  companion handoff

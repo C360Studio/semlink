@@ -40,7 +40,7 @@
       downstream in handoff docs and evidence
 - [x] 4.4 Add a draft SemOps v0 readback adapter using MAVLink-native contract
       fixtures without CS API in the hot path
-- [ ] 4.5 Recheck the adapter after the SemOps contract branch is pushed and
+- [x] 4.5 Recheck the adapter after the SemOps contract branch is pushed and
       final hold-out review is complete before runtime enablement
 
 ## 5. Command Safety
