@@ -53,8 +53,8 @@
 
 ## 6. Final Validation
 
-- [ ] 6.1 Run focused package/config/evidence tests
-- [ ] 6.2 Run `go test ./...`, `go build ./...`, and
+- [x] 6.1 Run focused package/config/evidence tests
+- [x] 6.2 Run `go test ./...`, `go build ./...`, and
       `openspec validate --all --strict`
-- [ ] 6.3 Record the final validation note and mark release/tag readiness or
+- [x] 6.3 Record the final validation note and mark release/tag readiness or
       explicit waivers
