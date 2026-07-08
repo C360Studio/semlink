@@ -20,6 +20,7 @@ set -a
 set +a
 
 SEMLINK_BLUEOS_HOST_PORT="${SEMLINK_BLUEOS_HOST_PORT:-8081}"
+SEMLINK_NODE_ID="${SEMLINK_NODE_ID:-semlink-local}"
 
 if [[ ! -f "$SEMSTREAMS_ROOT/go.mod" ]]; then
   echo "missing SemStreams checkout: $SEMSTREAMS_ROOT" >&2
@@ -52,5 +53,23 @@ docker compose -p "$COMPOSE_PROJECT_NAME" -f "$SEMLINK_ROOT/compose.blueos.yml" 
 
 curl -fsS "http://127.0.0.1:${SEMLINK_BLUEOS_HOST_PORT}/api/health" >/dev/null
 curl -fsS "http://127.0.0.1:${SEMLINK_BLUEOS_HOST_PORT}/register_service" >/dev/null
+evidence_body="$(curl -fsS "http://127.0.0.1:${SEMLINK_BLUEOS_HOST_PORT}/api/evidence")"
+
+require_evidence_contains() {
+  local label="$1"
+  local needle="$2"
+  if [[ "$evidence_body" != *"$needle"* ]]; then
+    echo "evidence response missing ${label}: ${needle}" >&2
+    echo "$evidence_body" >&2
+    exit 1
+  fi
+}
+
+require_evidence_contains "contract name" '"name":"c360.semlink.companion.evidence"'
+require_evidence_contains "contract version" '"version":"v1"'
+require_evidence_contains "bundle path" '"bundle":"/api/evidence"'
+require_evidence_contains "configured profile" '"profile":{"status":"configured"'
+require_evidence_contains "handoff node id" "\"node_id\":\"${SEMLINK_NODE_ID}\""
+require_evidence_contains "hardware transmit block" '"hardware_transmit_status":"blocked"'
 
 echo "BlueOS extension lifecycle smoke passed at http://127.0.0.1:${SEMLINK_BLUEOS_HOST_PORT}"

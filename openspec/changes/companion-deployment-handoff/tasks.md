@@ -13,7 +13,7 @@
 
 - [x] 2.1 Wire the BlueOS-style entrypoint and Compose smoke to the handoff
       profile
-- [ ] 2.2 Extend the package smoke to verify `/api/health`,
+- [x] 2.2 Extend the package smoke to verify `/api/health`,
       `/register_service`, and `/api/evidence`
 - [ ] 2.3 Add tests that package metadata declares companion/mesh behavior and
       does not declare hardware command transmit capability

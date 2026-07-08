@@ -22,6 +22,7 @@ using the companion handoff profile, then verifies:
 
 - `/api/health`
 - `/register_service`
+- `/api/evidence`
 
 ```bash
 scripts/blueos-extension-smoke.sh
@@ -34,6 +35,8 @@ The smoke defaults to `configs/handoff/companion.env.example`. Override with
 `SEMLINK_HANDOFF_PROFILE_FILE=/path/to/companion.env` to run a copied local
 profile. Compose mounts that file as `/data/companion.env`, and the BlueOS-style
 entrypoint sources it before translating environment values into runtime flags.
+The evidence check asserts the SemLink companion evidence contract, configured
+profile, handoff node ID, and fail-closed hardware transmit posture.
 
 ## Packaging Files
 

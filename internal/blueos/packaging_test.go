@@ -65,6 +65,18 @@ func TestBlueOSSmokeExportsHandoffProfileFile(t *testing.T) {
 	)
 }
 
+func TestBlueOSSmokeVerifiesEvidenceContract(t *testing.T) {
+	script := readRepoText(t, "scripts", "blueos-extension-smoke.sh")
+
+	assertContainsAll(t, script,
+		"/api/evidence",
+		"c360.semlink.companion.evidence",
+		"handoff node id",
+		"SEMLINK_NODE_ID",
+		"hardware_transmit_status",
+	)
+}
+
 func readRepoText(t *testing.T, parts ...string) string {
 	t.Helper()
 
