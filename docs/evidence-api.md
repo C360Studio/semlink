@@ -70,3 +70,22 @@ discover whether a consumer path is available without making that consumer a
 required runtime dependency for SemLink. `enabled=true` means the local path is
 available or configured; it does not mean the consumer is required for package
 readiness.
+
+## Demo Reports
+
+SemLink-owned e2e/demo commands generate structured JSON reports that wrap this
+evidence contract with probe assertions. They are consumer-oriented evidence,
+not a repo-owned GCS UI.
+
+```bash
+./scripts/demo-single-companion.sh
+./scripts/demo-mesh-companions.sh
+```
+
+The single-node report records `/api/health`, `/register_service`,
+`/api/evidence`, command-safety posture, simulator-only command evidence, and
+fake SemOps native readback results. The simple mesh report records N companion
+nodes, static peer URLs, watermark/diff catch-up, TTL/merge posture, selected
+summary counts, and raw MAVLink exclusion. These demos do not require SemOps,
+semstreams-ui, SemConnect/CS API, BlueOS, Navigator hardware, Gazebo, SITL, or
+physical MAVLink devices.

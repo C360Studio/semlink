@@ -13,5 +13,10 @@ The first packaging slice is lifecycle-only:
 - `/register_service` returns the BlueOS sidebar registration
 - hardware command transmit remains blocked
 
+Use `scripts/demo-single-companion.sh` and `scripts/demo-mesh-companions.sh`
+for repo-owned companion and simple mesh evidence before BlueOS packaging. Those
+demos do not require Navigator hardware, Gazebo, SITL, SemOps, semstreams-ui, or
+SemConnect/CS API.
+
 Navigator hardware access and read-only hardware smoke are tracked by the next
 OpenSpec task.

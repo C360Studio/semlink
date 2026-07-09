@@ -21,6 +21,20 @@ Sources:
 
 ## Local Lifecycle Smoke
 
+Before running the BlueOS-style package smoke, use the repo-owned lightweight
+demos when you only need companion/runtime evidence:
+
+```bash
+./scripts/demo-single-companion.sh
+./scripts/demo-mesh-companions.sh
+```
+
+Those commands write JSON reports under `.artifacts` and do not require Docker,
+BlueOS, Navigator hardware, Gazebo, SITL, SemOps, semstreams-ui, or
+SemConnect/CS API. They prove the companion API/evidence shape, command-safety
+posture, native SemOps readback adapter compatibility, and simple selected-state
+mesh catch-up before package lifecycle enters the picture.
+
 The local smoke runs the extension container with embedded SemStreams runtime
 using the companion handoff profile, then verifies:
 
@@ -105,6 +119,8 @@ tag proposal records:
 - `go test ./...`
 - `go build ./...`
 - `openspec validate --all --strict`
+- `./scripts/demo-single-companion.sh`
+- `./scripts/demo-mesh-companions.sh`
 - `docker compose -f compose.blueos.yml config`
 - `scripts/blueos-extension-smoke.sh`, or an explicit Docker-environment
   waiver such as a resolver/cache timeout before SemLink starts

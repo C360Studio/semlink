@@ -5,7 +5,56 @@ product shape is a companion service with CLI/config and UI-consumable local
 APIs; SemOps owns GCS/COP glass, and semstreams-ui can provide generic
 ops/debug views.
 
-## Run
+## Lightweight Companion Demos
+
+Run the repo-owned single-node companion demo without Docker, SemOps,
+SemConnect, semstreams-ui, Gazebo, BlueOS, Navigator hardware, or physical
+MAVLink devices:
+
+```bash
+./scripts/demo-single-companion.sh
+```
+
+The command writes `.artifacts/semlink-demo-single/report.json` by default. Set
+`SEMLINK_DEMO_REPORT=/path/to/report.json` to choose a different artifact path
+or `SEMLINK_DEMO_VEHICLE_PROFILE=<profile>` to label the simulated MAVLink
+vehicle profile. The first supported profile is `ardurover`, but the report
+shape is N-vehicle/companion-profile oriented rather than boat-only.
+
+The single-node report includes:
+
+- deterministic companion node ID, vehicle profile, vehicle count, and graph
+  entity count;
+- `/api/health`, `/register_service`, and `/api/evidence` probe status;
+- the local evidence bundle, including downstream optional posture;
+- hardware command-transmit block evidence and separate simulator-only command
+  evidence; and
+- fake SemOps native readback contract evidence without a CS API hot path.
+
+Treat missing demo report artifacts as a release waiver item until the matching
+OpenSpec task is implemented and validated.
+
+Run the simple local mesh demo with N companion nodes:
+
+```bash
+./scripts/demo-mesh-companions.sh
+```
+
+The command writes `.artifacts/semlink-demo-mesh/report.json` by default. Set
+`SEMLINK_DEMO_NODES=<n>`, `SEMLINK_DEMO_VEHICLES_PER_NODE=<n>`,
+`SEMLINK_DEMO_REPORT=/path/to/report.json`, or
+`SEMLINK_DEMO_VEHICLE_PROFILE=<profile>` to adjust the run.
+
+The simple mesh report includes:
+
+- deterministic companion node IDs and static local peer URLs;
+- initial and final selected-summary counts for each node;
+- peer count, applied diff count, diff item count, and watermark count;
+- TTL/merge posture for selected state catch-up; and
+- raw MAVLink exclusion evidence that distinguishes selected summaries from
+  raw frame replication.
+
+## Historical Compose Demo
 
 Run from the `semlink` checkout with `semconnect` and `semstreams` cloned
 beside it:

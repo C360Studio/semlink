@@ -2,7 +2,7 @@
 
 The companion handoff profile is the operator-facing configuration surface for
 the deployable SemLink companion package. It documents the values needed to run
-one boat-local node with local evidence APIs, optional UDP MAVLink input,
+one vehicle-local node with local evidence APIs, optional UDP MAVLink input,
 optional mesh peers, and optional downstream consumers.
 
 Use the copyable profile at:
@@ -22,9 +22,9 @@ Compose smoke to load this profile.
 
 | Field | Status | Purpose |
 | --- | --- | --- |
-| `SEMLINK_NODE_ID` | wired through handoff profile | Stable companion node ID, for example `boat-alpha`. |
-| `SEMLINK_VEHICLE_ID` | wired through handoff profile | Single-boat vehicle/profile ID. |
-| `SEMLINK_CALLSIGN` | wired through handoff profile | Human-readable boat callsign for evidence and demos. |
+| `SEMLINK_NODE_ID` | wired through handoff profile | Stable companion node ID, for example `vehicle-alpha`. |
+| `SEMLINK_VEHICLE_ID` | wired through handoff profile | Single vehicle/profile ID. |
+| `SEMLINK_CALLSIGN` | wired through handoff profile | Human-readable callsign for evidence and demos. |
 
 The current evidence API carries identity from the loaded handoff profile
 through `gcs.ServerOptions`. The handoff validator rejects blank or
@@ -143,11 +143,21 @@ adapter path, not the core companion deployment proof.
 
 Use these lanes in increasing fidelity:
 
+- Fast companion e2e: `go test ./internal/e2e`
+- Single-node companion demo: `./scripts/demo-single-companion.sh`
+- Simple local mesh demo: `./scripts/demo-mesh-companions.sh`
 - Local UDP evidence test:
   `go test ./internal/gcs -run TestUDPEvidenceSmokeProjectsExternalMAVLinkState`
 - BlueOS-style package smoke: `scripts/blueos-extension-smoke.sh`
 - Local ArduRover SITL lane: `scripts/ardurover-sitl-lane.sh`
 - Dockerized ArduRover/SemLink lane: `scripts/ardurover-sitl-compose-up.sh`
+
+The fast companion e2e and lightweight demo scripts are SemLink-owned
+proofs. They use deterministic simulated MAVLink vehicles and local
+httptest-style runtimes, write JSON reports under `.artifacts`, and do not
+require SemOps, semstreams-ui, SemConnect/CS API, BlueOS, Navigator hardware,
+Gazebo, SITL, or physical MAVLink devices. Boat/ArduRover is the first demo
+profile, not the architecture limit.
 
 The local UDP evidence test is the fastest handoff proof. It opens a UDP
 listener, sends one MAVLink heartbeat frame, verifies that the internal
