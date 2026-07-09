@@ -27,6 +27,12 @@ The 2026-07-08 recheck against the pushed SemOps
 the standards projection edge for MVP; SemLink keeps this path native and does
 not add CS API runtime coupling for the companion handoff.
 
+BlueOS, Navigator, companion-Pi, SITL, and plain native deployments all use the
+same adapter request shape. BlueOS service registration, Navigator readiness,
+and package lifecycle evidence are deployment metadata only; they do not replace
+MAVLink-native command, message, target, ACK, or readback vocabulary, and the
+adapter does not depend on BlueOS REST, MAVLink2REST, or endpoint-manager state.
+
 ## Boundary
 
 The adapter does not mint trusted SemOps operator headers. Production trust
