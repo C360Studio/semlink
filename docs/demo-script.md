@@ -21,6 +21,12 @@ or `SEMLINK_DEMO_VEHICLE_PROFILE=<profile>` to label the simulated MAVLink
 vehicle profile. The first supported profile is `ardurover`, but the report
 shape is N-vehicle/companion-profile oriented rather than boat-only.
 
+Set `SEMLINK_DEMO_ARTIFACT=.artifacts/semlink-demo-single/artifact.json` to
+also emit a `semlink-companion-demo-artifact-v0` envelope for downstream
+SemOps ingestion. The raw report remains the local proof artifact; the envelope
+adds producer provenance, source fidelity, generator metadata, timestamp
+coherence, and no-transmit posture around the same report.
+
 The single-node report includes:
 
 - deterministic companion node ID, vehicle profile, vehicle count, and graph
@@ -45,6 +51,12 @@ The command writes `.artifacts/semlink-demo-mesh/report.json` by default. Set
 `SEMLINK_DEMO_REPORT=/path/to/report.json`, or
 `SEMLINK_DEMO_VEHICLE_PROFILE=<profile>` to adjust the run.
 
+Set `SEMLINK_DEMO_ARTIFACT=.artifacts/semlink-demo-mesh/artifact.json` to also
+emit a SemOps-ingestable artifact envelope for the mesh report. The default
+artifact source fidelity is `deterministic`; SemLink will not claim
+`sitl-backed` or `hardware-adjacent` fidelity unless the caller provides
+per-node source metadata.
+
 The simple mesh report includes:
 
 - deterministic companion node IDs and static local peer URLs;
@@ -53,6 +65,57 @@ The simple mesh report includes:
 - TTL/merge posture for selected state catch-up; and
 - raw MAVLink exclusion evidence that distinguishes selected summaries from
   raw frame replication.
+
+## Artifact Envelope Fields
+
+The optional artifact envelope has this top-level shape:
+
+```json
+{
+  "artifact_kind": "semlink-companion-demo-artifact-v0",
+  "generated_at": "2026-07-09T17:00:00Z",
+  "source": {
+    "source_fidelity": "deterministic",
+    "semlink_version": "dev",
+    "generator_command": "semlink-demo -mode mesh -vehicle-profile ardurover",
+    "generator_profile": "mesh-deterministic",
+    "no_transmit_posture": "SemLink demo; no SemOps or hardware transmit authority"
+  },
+  "report": {}
+}
+```
+
+Use these environment variables to override producer metadata when invoking the
+wrapper scripts:
+
+- `SEMLINK_DEMO_ARTIFACT_SOURCE_FIDELITY`: `deterministic`,
+  `sitl-backed`, or `hardware-adjacent`.
+- `SEMLINK_DEMO_ARTIFACT_SEMLINK_VERSION` and
+  `SEMLINK_DEMO_ARTIFACT_SEMLINK_COMMIT`: source reference fields.
+- `SEMLINK_DEMO_ARTIFACT_GENERATOR_PROFILE` and
+  `SEMLINK_DEMO_ARTIFACT_GENERATOR_COMMAND`: stable generator identity.
+- `SEMLINK_DEMO_ARTIFACT_SIMULATOR_FAMILY`: optional simulator family label.
+- `SEMLINK_DEMO_ARTIFACT_NO_TRANSMIT_POSTURE`: override no-transmit text while
+  preserving the structured command-safety evidence in the embedded report.
+- `SEMLINK_DEMO_ARTIFACT_NODE_SOURCES`: semicolon-separated per-node
+  `key=value` sets for live-source claims, using keys `node_id`,
+  `source_fidelity`, `vehicle_source`, `mavlink_system_id`,
+  `simulator_family`, and `route`.
+
+Example node-source metadata:
+
+```bash
+node_source='node_id=vehicle-node-1,source_fidelity=sitl-backed,vehicle_source=sitl'
+node_source="$node_source"',mavlink_system_id=42,simulator_family=ardupilot'
+SEMLINK_DEMO_ARTIFACT_SOURCE_FIDELITY=sitl-backed \
+SEMLINK_DEMO_ARTIFACT_NODE_SOURCES="$node_source" \
+SEMLINK_DEMO_ARTIFACT=.artifacts/semlink-demo-mesh/artifact.json \
+./scripts/demo-mesh-companions.sh
+```
+
+The current lightweight demos are deterministic local harnesses. Live-source
+claims are accepted only when each claimed node includes matching report node
+identity and enough source metadata for SemOps to understand the evidence lane.
 
 ## Historical Compose Demo
 

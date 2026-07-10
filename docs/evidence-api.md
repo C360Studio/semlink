@@ -89,3 +89,11 @@ nodes, static peer URLs, watermark/diff catch-up, TTL/merge posture, selected
 summary counts, and raw MAVLink exclusion. These demos do not require SemOps,
 semstreams-ui, SemConnect/CS API, BlueOS, Navigator hardware, Gazebo, SITL, or
 physical MAVLink devices.
+
+The demo commands can also emit a `semlink-companion-demo-artifact-v0` envelope
+for downstream SemOps ingestion by setting `SEMLINK_DEMO_ARTIFACT` in the
+wrapper scripts or `-artifact-output` on `cmd/semlink-demo`. The envelope wraps
+the raw report with SemLink producer provenance, source fidelity, generator
+metadata, timestamp coherence, and no-transmit posture. Raw reports remain the
+repo-owned local proof; artifact envelopes are optional downstream handoff
+files and do not make SemOps a runtime dependency.
