@@ -213,9 +213,12 @@ scripts/ardurover-sitl-compose-up.sh
 ```
 
 The Docker lane is operator-invoked because it builds/runs the ArduPilot SITL
-container and expects sibling `semconnect` and `semstreams` checkouts. Use it
-when the local host does not have `sim_vehicle.py`, or when the SemLink,
-SemConnect, and SemStreams demo stack should be exercised together.
+container and expects sibling `semconnect` and `semstreams` checkouts. The
+standard image contract lives in `docker/ardupilot-sitl/standard.env` and
+defaults to `c360studio/semlink-ardupilot-sitl:rover-4.6.3` from ArduPilot
+`Rover-4.6.3`. Use it when the local host does not have `sim_vehicle.py`, or
+when the SemLink, SemConnect, and SemStreams demo stack should be exercised
+together.
 
 The proof readback should use:
 

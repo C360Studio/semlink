@@ -8,12 +8,23 @@ SEMCONNECT_ROOT="${SEMCONNECT_ROOT:-$DEMO_ROOT/semconnect}"
 SEMSTREAMS_ROOT="${SEMSTREAMS_ROOT:-$DEMO_ROOT/semstreams}"
 COMPOSE_PROJECT_NAME="${COMPOSE_PROJECT_NAME:-semlink-demo}"
 SEMLINK_HANDOFF_PROFILE_FILE="${SEMLINK_HANDOFF_PROFILE_FILE:-$SEMLINK_ROOT/configs/handoff/companion.env.example}"
+ARDUPILOT_SITL_STANDARD_FILE="${ARDUPILOT_SITL_STANDARD_FILE:-$SEMLINK_ROOT/docker/ardupilot-sitl/standard.env}"
 
 if [[ ! -f "$SEMLINK_HANDOFF_PROFILE_FILE" ]]; then
   echo "missing SemLink handoff profile: $SEMLINK_HANDOFF_PROFILE_FILE" >&2
   echo "copy configs/handoff/companion.env.example or set SEMLINK_HANDOFF_PROFILE_FILE=/path/to/profile.env" >&2
   exit 1
 fi
+
+if [[ ! -f "$ARDUPILOT_SITL_STANDARD_FILE" ]]; then
+  echo "missing ArduPilot SITL standard env: $ARDUPILOT_SITL_STANDARD_FILE" >&2
+  exit 1
+fi
+
+set -a
+# shellcheck disable=SC1090
+. "$ARDUPILOT_SITL_STANDARD_FILE"
+set +a
 
 set -a
 # shellcheck disable=SC1090
@@ -67,5 +78,7 @@ docker compose -p "$COMPOSE_PROJECT_NAME" \
 
 echo "SemLink UI: http://127.0.0.1:${SEMLINK_UI_HOST_PORT}"
 echo "SemConnect CS API: http://127.0.0.1:${CS_API_HOST_PORT}"
-echo "ArduPilot SITL frame: ${ARDUPILOT_FRAME:-rover}"
+echo "ArduPilot SITL image: ${ARDUPILOT_SITL_IMAGE}:${ARDUPILOT_SITL_TAG}"
+echo "ArduPilot SITL ref: ${ARDUPILOT_REF}"
+echo "ArduPilot SITL frame: ${ARDUPILOT_FRAME}"
 echo "SemLink MAVLink UDP listen: ${SEMLINK_MAVLINK_UDP_LISTEN}"

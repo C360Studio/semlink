@@ -2,7 +2,14 @@
 
 FROM ubuntu:22.04
 
-ARG ARDUPILOT_REF=master
+ARG ARDUPILOT_REF=Rover-4.6.3
+LABEL org.opencontainers.image.title="SemLink ArduPilot SITL" \
+    org.opencontainers.image.description="Standard headless ArduPilot Rover SITL image for SemLink evidence lanes" \
+    org.opencontainers.image.source="https://github.com/C360Studio/semlink" \
+    org.opencontainers.image.version="${ARDUPILOT_REF}" \
+    c360.semlink.sitl.vehicle="Rover" \
+    c360.semlink.sitl.binary="bin/ardurover" \
+    c360.semlink.sitl.gazebo="false"
 ENV DEBIAN_FRONTEND=noninteractive
 ENV TZ=Etc/UTC
 ENV PATH="/opt/ardupilot/Tools/autotest:${PATH}"

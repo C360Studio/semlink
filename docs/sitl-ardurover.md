@@ -50,15 +50,45 @@ handoff profile before Compose interpolation so SemLink listens on
 `SEMLINK_MAVLINK_UDP_LISTEN` and ArduPilot sends to the matching
 `SEMLINK_MAVLINK_UDP_PORT` inside the Compose network.
 
+SemLink owns the standard SITL container recipe at
+`docker/ardupilot-sitl/`. The shared default is:
+
+- image: `c360studio/semlink-ardupilot-sitl:rover-4.6.3`
+- ArduPilot ref: `Rover-4.6.3`
+- vehicle/frame: `Rover` / `rover`
+- entrypoint: `sim_vehicle.py`
+- prebuilt binary: `bin/ardurover`
+- posture: headless, no Gazebo, no hardware, no GCS dependency
+
 ```bash
 scripts/ardurover-sitl-compose-up.sh
 ```
 
-Optional build and run pins:
+Build the canonical image directly with:
 
 ```bash
-ARDUPILOT_REF=master ARDUPILOT_FRAME=sailboat-motor \
+scripts/ardupilot-sitl-image-build.sh
+```
+
+Optional build and run overrides:
+
+```bash
+ARDUPILOT_REF=Rover-4.6.3 ARDUPILOT_FRAME=sailboat-motor \
   scripts/ardurover-sitl-compose-up.sh
+```
+
+The defaults live in `docker/ardupilot-sitl/standard.env`. Override
+`ARDUPILOT_REF`, `ARDUPILOT_SITL_IMAGE`, or `ARDUPILOT_SITL_TAG` only when the
+evidence record names the non-standard image/ref used for that run.
+
+Downstream repos should prefer the published or locally built canonical image
+instead of installing host `sim_vehicle.py`:
+
+```bash
+SEMLINK_E2E_SITL=1 \
+SEMLINK_E2E_SITL_DOCKER_IMAGE=c360studio/semlink-ardupilot-sitl:rover-4.6.3 \
+SEMLINK_E2E_SITL_TIMEOUT=4m \
+go test ./internal/e2e -run TestArduPilotSITLArtifactE2E -count=1 -v -timeout 5m
 ```
 
 The wrapper follows the existing demo compose shape, so it expects sibling
@@ -114,10 +144,10 @@ If host ArduPilot is not installed, build the repo-owned Rover SITL image and
 point the e2e test at it:
 
 ```bash
-docker build -f docker/ardupilot-sitl/Dockerfile -t c360studio/semlink-ardupilot-sitl:local .
+scripts/ardupilot-sitl-image-build.sh
 
 SEMLINK_E2E_SITL=1 \
-SEMLINK_E2E_SITL_DOCKER_IMAGE=c360studio/semlink-ardupilot-sitl:local \
+SEMLINK_E2E_SITL_DOCKER_IMAGE=c360studio/semlink-ardupilot-sitl:rover-4.6.3 \
 SEMLINK_E2E_SITL_TIMEOUT=4m \
 go test ./internal/e2e -run TestArduPilotSITLArtifactE2E -count=1 -v -timeout 5m
 ```
@@ -140,7 +170,7 @@ SEMLINK_E2E_SITL_OUTPUT_HOST=host.docker.internal \
 SEMLINK_E2E_SITL_MAVPROXY_ARGS="--non-interactive --default-modules=output --retries=30" \
 SEMLINK_E2E_SITL_DELAY_START_SECONDS=5 \
 SEMLINK_E2E_SITL=1 \
-SEMLINK_E2E_SITL_DOCKER_IMAGE=c360studio/semlink-ardupilot-sitl:local \
+SEMLINK_E2E_SITL_DOCKER_IMAGE=c360studio/semlink-ardupilot-sitl:rover-4.6.3 \
 go test ./internal/e2e -run TestArduPilotSITLArtifactE2E -count=1 -v
 ```
 

@@ -121,6 +121,9 @@ func TestArduRoverScriptsLoadHandoffProfile(t *testing.T) {
 			wants: []string{
 				"SEMLINK_HANDOFF_PROFILE_FILE",
 				"configs/handoff/companion.env.example",
+				"ARDUPILOT_SITL_STANDARD_FILE",
+				"docker/ardupilot-sitl/standard.env",
+				". \"$ARDUPILOT_SITL_STANDARD_FILE\"",
 				". \"$SEMLINK_HANDOFF_PROFILE_FILE\"",
 				"export SEMLINK_HANDOFF_PROFILE_FILE",
 				"export SEMLINK_MAVLINK_UDP_PORT=\"${SEMLINK_MAVLINK_UDP_PORT:-14550}\"",
@@ -145,15 +148,69 @@ func TestArduRoverScriptsLoadHandoffProfile(t *testing.T) {
 	}
 }
 
+func TestArduPilotSITLStandardContainerContract(t *testing.T) {
+	env := mustReadRepoFile(t, filepath.Join("docker", "ardupilot-sitl", "standard.env"))
+	for _, want := range []string{
+		"ARDUPILOT_REF=\"${ARDUPILOT_REF:-Rover-4.6.3}\"",
+		"ARDUPILOT_SITL_IMAGE=\"${ARDUPILOT_SITL_IMAGE:-c360studio/semlink-ardupilot-sitl}\"",
+		"ARDUPILOT_SITL_TAG=\"${ARDUPILOT_SITL_TAG:-rover-4.6.3}\"",
+		"ARDUPILOT_VEHICLE=\"${ARDUPILOT_VEHICLE:-Rover}\"",
+		"ARDUPILOT_FRAME=\"${ARDUPILOT_FRAME:-rover}\"",
+	} {
+		if !strings.Contains(env, want) {
+			t.Fatalf("standard.env missing %q", want)
+		}
+	}
+	if strings.Contains(env, "master") {
+		t.Fatalf("standard.env must not default to moving ArduPilot master: %s", env)
+	}
+
+	dockerfile := mustReadRepoFile(t, filepath.Join("docker", "ardupilot-sitl", "Dockerfile"))
+	for _, want := range []string{
+		"ARG ARDUPILOT_REF=Rover-4.6.3",
+		"org.opencontainers.image.title=\"SemLink ArduPilot SITL\"",
+		"org.opencontainers.image.version=\"${ARDUPILOT_REF}\"",
+		"c360.semlink.sitl.binary=\"bin/ardurover\"",
+		"./waf build --target bin/ardurover",
+	} {
+		if !strings.Contains(dockerfile, want) {
+			t.Fatalf("Dockerfile missing %q", want)
+		}
+	}
+	if strings.Contains(dockerfile, "ARG ARDUPILOT_REF=master") {
+		t.Fatalf("Dockerfile must not default to moving ArduPilot master")
+	}
+}
+
 func TestSITLComposeUsesSemLinkBuildContext(t *testing.T) {
 	body := mustReadRepoFile(t, filepath.Join("compose.sitl.yml"))
 	for _, want := range []string{
+		"image: ${ARDUPILOT_SITL_IMAGE:-c360studio/semlink-ardupilot-sitl}:${ARDUPILOT_SITL_TAG:-rover-4.6.3}",
 		"context: ${SEMLINK_ROOT:-.}",
 		"dockerfile: docker/ardupilot-sitl/Dockerfile",
+		"ARDUPILOT_REF: ${ARDUPILOT_REF:-Rover-4.6.3}",
 		"--serial0=udpclient:semlink:${SEMLINK_MAVLINK_UDP_CONTAINER_PORT:-14550}",
 	} {
 		if !strings.Contains(body, want) {
 			t.Fatalf("compose.sitl.yml missing %q", want)
+		}
+	}
+	if strings.Contains(body, "ARDUPILOT_REF:-master") {
+		t.Fatalf("compose.sitl.yml must not default to moving ArduPilot master")
+	}
+}
+
+func TestArduPilotSITLImageBuildScriptUsesStandardContract(t *testing.T) {
+	body := mustReadRepoFile(t, filepath.Join("scripts", "ardupilot-sitl-image-build.sh"))
+	for _, want := range []string{
+		"ARDUPILOT_SITL_STANDARD_FILE",
+		"docker/ardupilot-sitl/standard.env",
+		". \"$ARDUPILOT_SITL_STANDARD_FILE\"",
+		"--build-arg \"ARDUPILOT_REF=$ARDUPILOT_REF\"",
+		"-t \"$ARDUPILOT_SITL_IMAGE:$ARDUPILOT_SITL_TAG\"",
+	} {
+		if !strings.Contains(body, want) {
+			t.Fatalf("scripts/ardupilot-sitl-image-build.sh missing %q", want)
 		}
 	}
 }

@@ -19,14 +19,15 @@ services:
       - "-tak-interval=${SEMLINK_TAK_INTERVAL:-1s}"
 
   ardupilot-sitl:
+    image: ${ARDUPILOT_SITL_IMAGE:-c360studio/semlink-ardupilot-sitl}:${ARDUPILOT_SITL_TAG:-rover-4.6.3}
     build:
       context: ${SEMLINK_ROOT:-.}
       dockerfile: docker/ardupilot-sitl/Dockerfile
       args:
-        ARDUPILOT_REF: ${ARDUPILOT_REF:-master}
+        ARDUPILOT_REF: ${ARDUPILOT_REF:-Rover-4.6.3}
     command:
       - "-v"
-      - "Rover"
+      - "${ARDUPILOT_VEHICLE:-Rover}"
       - "-f"
       - "${ARDUPILOT_FRAME:-rover}"
       - "--no-mavproxy"
