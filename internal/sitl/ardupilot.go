@@ -18,14 +18,18 @@ const (
 )
 
 type ArduPilotLaneConfig struct {
-	Vehicle    string
-	Frame      Frame
-	OutputHost string
-	OutputPort int
-	Aircraft   string
-	Speedup    int
-	WipeEEPROM bool
-	NoMAVProxy bool
+	Vehicle           string
+	Frame             Frame
+	OutputHost        string
+	OutputPort        int
+	Aircraft          string
+	Speedup           int
+	WipeEEPROM        bool
+	NoMAVProxy        bool
+	MAVProxyOut       string
+	MAVProxyArgs      string
+	NoExtraPorts      bool
+	DelayStartSeconds int
 }
 
 type Evidence struct {
@@ -92,8 +96,23 @@ func (c ArduPilotLaneConfig) SimVehicleArgs() ([]string, error) {
 	args = append(args,
 		fmt.Sprintf("--speedup=%d", c.Speedup),
 		"--aircraft", c.Aircraft,
-		"-A", fmt.Sprintf("--serial0=%s", c.MAVLinkOutput()),
 	)
+	if c.NoMAVProxy {
+		args = append(args, "-A", fmt.Sprintf("--serial0=%s", c.MAVLinkOutput()))
+	} else {
+		if c.NoExtraPorts {
+			args = append(args, "--no-extra-ports")
+		}
+		if c.MAVProxyOut != "" {
+			args = append(args, "--out", c.MAVProxyOut)
+		}
+		if c.MAVProxyArgs != "" {
+			args = append(args, "--mavproxy-args", c.MAVProxyArgs)
+		}
+	}
+	if c.DelayStartSeconds > 0 {
+		args = append(args, fmt.Sprintf("--delay-start=%d", c.DelayStartSeconds))
+	}
 	if c.WipeEEPROM {
 		args = append(args, "-w")
 	}
@@ -133,9 +152,6 @@ func (c ArduPilotLaneConfig) withDefaults() ArduPilotLaneConfig {
 	}
 	if c.Speedup <= 0 {
 		c.Speedup = 1
-	}
-	if !c.NoMAVProxy {
-		c.NoMAVProxy = true
 	}
 	return c
 }

@@ -148,6 +148,8 @@ Use these lanes in increasing fidelity:
 - Simple local mesh demo: `./scripts/demo-mesh-companions.sh`
 - Local UDP evidence test:
   `go test ./internal/gcs -run TestUDPEvidenceSmokeProjectsExternalMAVLinkState`
+- Optional ArduPilot SITL artifact e2e:
+  `SEMLINK_E2E_SITL=1 go test ./internal/e2e -run TestArduPilotSITLArtifactE2E -count=1 -v`
 - BlueOS-style package smoke: `scripts/blueos-extension-smoke.sh`
 - Local ArduRover SITL lane: `scripts/ardurover-sitl-lane.sh`
 - Dockerized ArduRover/SemLink lane: `scripts/ardurover-sitl-compose-up.sh`

@@ -120,6 +120,19 @@ The current lightweight demos are deterministic local harnesses. Live-source
 claims are accepted only when each claimed node includes matching report node
 identity and enough source metadata for SemOps to understand the evidence lane.
 
+For the ArduPilot SITL lane, prefer the evidence-derived producer instead of
+hand-authoring node metadata:
+
+```bash
+scripts/demo-sitl-artifact.sh
+```
+
+That wrapper fetches the running companion node's `/api/evidence` and emits
+`.artifacts/semlink-demo-sitl/artifact.json` with
+`source_fidelity=sitl-backed` only after external MAVLink/SITL evidence is
+observed. It does not require SemOps, SemConnect, CS API, BlueOS, Navigator
+hardware, Gazebo, or GCS glass in the producer path.
+
 ## Historical Compose Demo
 
 Run from the `semlink` checkout with `semconnect` and `semstreams` cloned
@@ -237,6 +250,16 @@ scripts/ardurover-sitl-lane.sh
 scripts/blueos-extension-smoke.sh
 scripts/navigator-readonly-smoke.sh
 ```
+
+The real ArduPilot SITL e2e is also in the Go test suite, skipped unless
+explicitly enabled:
+
+```bash
+SEMLINK_E2E_SITL=1 go test ./internal/e2e -run TestArduPilotSITLArtifactE2E -count=1 -v
+```
+
+Use this lane when SemLink needs to prove a real SITL-backed artifact rather
+than the default deterministic or UDP-smoke evidence.
 
 ## Teardown
 

@@ -64,6 +64,39 @@ func TestArduRoverLaneUsesHandoffProfileMAVLinkTarget(t *testing.T) {
 	}
 }
 
+func TestArduRoverLaneCanUseMAVProxyBridgeWithoutGazebo(t *testing.T) {
+	cfg := DefaultArduRoverLane()
+	cfg.NoMAVProxy = false
+	cfg.NoExtraPorts = true
+	cfg.MAVProxyOut = "host.docker.internal:14550"
+	cfg.MAVProxyArgs = "--non-interactive --default-modules=output --retries=30"
+	cfg.DelayStartSeconds = 5
+
+	args, err := cfg.SimVehicleArgs()
+	if err != nil {
+		t.Fatalf("SimVehicleArgs() error = %v", err)
+	}
+	joined := strings.Join(args, " ")
+	for _, want := range []string{
+		"-v Rover",
+		"-f rover",
+		"--aircraft semlink-ardurover",
+		"--no-extra-ports",
+		"--out host.docker.internal:14550",
+		"--mavproxy-args --non-interactive --default-modules=output --retries=30",
+		"--delay-start=5",
+	} {
+		if !strings.Contains(joined, want) {
+			t.Fatalf("args %q missing %q", joined, want)
+		}
+	}
+	for _, unwanted := range []string{"--no-mavproxy", "--serial0=", "gazebo", "--map"} {
+		if strings.Contains(strings.ToLower(joined), strings.ToLower(unwanted)) {
+			t.Fatalf("args %q must not include %q", joined, unwanted)
+		}
+	}
+}
+
 func TestArduRoverScriptsLoadHandoffProfile(t *testing.T) {
 	cases := []struct {
 		name  string

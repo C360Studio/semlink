@@ -25,6 +25,7 @@ type UDPSource struct {
 	clock            Clock
 	readDeadline     time.Duration
 	maxDatagramBytes int
+	pending          []RawFrame
 }
 
 func ListenUDP(cfg UDPSourceConfig) (*UDPSource, error) {
@@ -36,7 +37,11 @@ func ListenUDP(cfg UDPSourceConfig) (*UDPSource, error) {
 	if err != nil {
 		return nil, fmt.Errorf("resolve MAVLink UDP listen address: %w", err)
 	}
-	conn, err := net.ListenUDP("udp", udpAddr)
+	network := "udp4"
+	if udpAddr.IP != nil && udpAddr.IP.To4() == nil {
+		network = "udp6"
+	}
+	conn, err := net.ListenUDP(network, udpAddr)
 	if err != nil {
 		return nil, fmt.Errorf("listen for MAVLink UDP frames: %w", err)
 	}
@@ -55,7 +60,7 @@ func ListenUDP(cfg UDPSourceConfig) (*UDPSource, error) {
 	}
 	maxDatagramBytes := cfg.MaxDatagramBytes
 	if maxDatagramBytes <= 0 {
-		maxDatagramBytes = 280
+		maxDatagramBytes = 4096
 	}
 
 	return &UDPSource{
@@ -78,6 +83,11 @@ func (s *UDPSource) Close() error {
 func (s *UDPSource) Read(ctx context.Context) (RawFrame, error) {
 	buf := make([]byte, s.maxDatagramBytes)
 	for {
+		if len(s.pending) > 0 {
+			frame := s.pending[0]
+			s.pending = s.pending[1:]
+			return frame, nil
+		}
 		if err := ctx.Err(); err != nil {
 			return RawFrame{}, err
 		}
@@ -97,18 +107,62 @@ func (s *UDPSource) Read(ctx context.Context) (RawFrame, error) {
 		data := make([]byte, n)
 		copy(data, buf[:n])
 
-		frame, err := DecodeFrame(data)
-		if err != nil {
+		frames := s.framesFromDatagram(data)
+		if len(frames) == 0 {
 			continue
 		}
-		vehicleID := fmt.Sprintf("sys-%03d", frame.SystemID)
-		return RawFrame{
-			Subject:   fmt.Sprintf("%s.%s", s.subjectPrefix, vehicleID),
-			VehicleID: vehicleID,
-			SystemID:  frame.SystemID,
-			EmittedAt: s.clock(),
-			Bytes:     data,
-		}, nil
+		s.pending = append(s.pending, frames[1:]...)
+		return frames[0], nil
+	}
+}
+
+func (s *UDPSource) framesFromDatagram(data []byte) []RawFrame {
+	var frames []RawFrame
+	for offset := 0; offset < len(data); {
+		frameLen, ok := mavlinkFrameLen(data[offset:])
+		if !ok {
+			offset++
+			continue
+		}
+		if len(data[offset:]) < frameLen {
+			break
+		}
+
+		frameBytes := make([]byte, frameLen)
+		copy(frameBytes, data[offset:offset+frameLen])
+		if frame, err := DecodeFrame(frameBytes); err == nil {
+			vehicleID := fmt.Sprintf("sys-%03d", frame.SystemID)
+			frames = append(frames, RawFrame{
+				Subject:   fmt.Sprintf("%s.%s", s.subjectPrefix, vehicleID),
+				VehicleID: vehicleID,
+				SystemID:  frame.SystemID,
+				EmittedAt: s.clock(),
+				Bytes:     frameBytes,
+			})
+		}
+		offset += frameLen
+	}
+	return frames
+}
+
+func mavlinkFrameLen(data []byte) (int, bool) {
+	if len(data) < headerLenV1+checksumLen {
+		return 0, false
+	}
+	switch data[0] {
+	case stxV1:
+		return headerLenV1 + int(data[1]) + checksumLen, true
+	case stxV2:
+		if len(data) < headerLenV2+checksumLen {
+			return 0, false
+		}
+		frameLen := headerLenV2 + int(data[1]) + checksumLen
+		if data[2]&incompatFlagSigned != 0 {
+			frameLen += signatureLen
+		}
+		return frameLen, true
+	default:
+		return 0, false
 	}
 }
 

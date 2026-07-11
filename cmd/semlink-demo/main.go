@@ -4,6 +4,7 @@ import (
 	"context"
 	"flag"
 	"fmt"
+	"net/http"
 	"os"
 	"os/exec"
 	"runtime/debug"
@@ -33,8 +34,13 @@ func (f *artifactNodeSourceFlags) Set(value string) error {
 }
 
 func main() {
-	mode := flag.String("mode", "single", "demo mode: single")
+	mode := flag.String("mode", "single", "demo mode: single, mesh, sitl-artifact")
 	output := flag.String("output", e2e.DefaultSingleNodeReportPath, "path for the generated JSON report")
+	runtimeURL := flag.String(
+		"runtime-url",
+		"http://127.0.0.1:8081",
+		"SemLink runtime base URL for sitl-artifact mode",
+	)
 	vehicleProfile := flag.String(
 		"vehicle-profile",
 		"ardurover",
@@ -81,6 +87,16 @@ func main() {
 		"artifact-no-transmit-posture",
 		"",
 		"no-transmit posture recorded in artifact source metadata",
+	)
+	artifactVehicleSource := flag.String(
+		"artifact-vehicle-source",
+		e2e.DefaultSITLVehicleSource,
+		"vehicle source recorded for SITL-backed artifact node metadata",
+	)
+	artifactRoute := flag.String(
+		"artifact-route",
+		"",
+		"source route recorded for SITL-backed artifact node metadata",
 	)
 	var artifactNodeSources artifactNodeSourceFlags
 	flag.Var(
@@ -186,6 +202,70 @@ func main() {
 			}
 			fmt.Printf("simple mesh demo artifact: %s\n", *artifactOutput)
 		}
+	case "sitl-artifact":
+		if *output == e2e.DefaultSingleNodeReportPath {
+			*output = e2e.DefaultSITLBackedReportPath
+		}
+		if *artifactOutput == "" {
+			*artifactOutput = e2e.DefaultSITLBackedArtifactPath
+		}
+		if strings.TrimSpace(*artifactSourceFidelity) != "" &&
+			strings.TrimSpace(*artifactSourceFidelity) != e2e.ArtifactFidelityDeterministic &&
+			strings.TrimSpace(*artifactSourceFidelity) != e2e.ArtifactFidelitySITLBacked {
+			fmt.Fprintf(os.Stderr, "sitl-artifact mode only emits %q fidelity\n", e2e.ArtifactFidelitySITLBacked)
+			os.Exit(2)
+		}
+		client := &http.Client{Timeout: 2 * time.Second}
+		evidenceProbe, evidence, err := e2e.FetchRuntimeEvidence(ctx, client, *runtimeURL)
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "fetch runtime evidence: %v\n", err)
+			os.Exit(1)
+		}
+		resolvedVersion, resolvedCommit, err := resolveSemLinkSourceRef(
+			*artifactSemLinkVersion,
+			*artifactSemLinkCommit,
+			currentBuildVCSInfo(ctx),
+		)
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "resolve artifact source ref: %v\n", err)
+			os.Exit(1)
+		}
+		generatorCommand := strings.TrimSpace(*artifactGeneratorCommand)
+		if generatorCommand == "" {
+			generatorCommand = fmt.Sprintf(
+				"semlink-demo -mode sitl-artifact -runtime-url %s -vehicle-profile %s",
+				*runtimeURL,
+				*vehicleProfile,
+			)
+		}
+		report, artifact, err := e2e.BuildSITLBackedSingleNodeDemoArtifact(e2e.SITLBackedDemoConfig{
+			Evidence:          evidence,
+			EvidenceProbe:     evidenceProbe,
+			RuntimeBaseURL:    *runtimeURL,
+			VehicleProfile:    *vehicleProfile,
+			SimulatorFamily:   *artifactSimulatorFamily,
+			VehicleSource:     *artifactVehicleSource,
+			Route:             *artifactRoute,
+			SemLinkVersion:    resolvedVersion,
+			SemLinkCommit:     resolvedCommit,
+			GeneratorCommand:  generatorCommand,
+			GeneratorProfile:  *artifactGeneratorProfile,
+			NoTransmitPosture: *artifactNoTransmitPosture,
+		})
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "build SITL-backed artifact: %v\n", err)
+			os.Exit(1)
+		}
+		if err := e2e.WriteJSONReport(*output, report); err != nil {
+			fmt.Fprintf(os.Stderr, "write report: %v\n", err)
+			os.Exit(1)
+		}
+		fmt.Printf("SITL-backed demo report: %s\n", *output)
+		if err := e2e.WriteJSONReport(*artifactOutput, artifact); err != nil {
+			fmt.Fprintf(os.Stderr, "write artifact: %v\n", err)
+			os.Exit(1)
+		}
+		fmt.Printf("SITL-backed demo artifact: %s\n", *artifactOutput)
 	default:
 		fmt.Fprintf(os.Stderr, "unsupported demo mode %q\n", *mode)
 		os.Exit(2)

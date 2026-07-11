@@ -15,6 +15,8 @@ const (
 )
 
 const (
+	stxV1              = 0xfe
+	headerLenV1        = 6
 	stxV2              = 0xfd
 	headerLenV2        = 10
 	checksumLen        = 2

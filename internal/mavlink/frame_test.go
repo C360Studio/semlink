@@ -25,6 +25,25 @@ func TestEncodeDecodeGlobalPositionInt(t *testing.T) {
 	}
 }
 
+func TestEncodeDecodeHeartbeatV1(t *testing.T) {
+	frame, err := EncodeV1(9, 42, 1, MessageHeartbeat, HeartbeatPayloadForType(false, 0, MavTypeGroundRover))
+	if err != nil {
+		t.Fatalf("EncodeV1: %v", err)
+	}
+
+	msg, err := DecodeMessage(frame)
+	if err != nil {
+		t.Fatalf("DecodeMessage: %v", err)
+	}
+	got, ok := msg.(Heartbeat)
+	if !ok {
+		t.Fatalf("message type = %T, want Heartbeat", msg)
+	}
+	if got.System() != 42 || got.SequenceNumber() != 9 || got.Type != MavTypeGroundRover {
+		t.Fatalf("heartbeat = sys %d seq %d type %d", got.System(), got.SequenceNumber(), got.Type)
+	}
+}
+
 func TestDecodeRejectsCorruptChecksum(t *testing.T) {
 	frame, err := EncodeV2(1, 1, 1, MessageHeartbeat, HeartbeatPayload(true, 0))
 	if err != nil {
