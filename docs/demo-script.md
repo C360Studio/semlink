@@ -76,7 +76,7 @@ The optional artifact envelope has this top-level shape:
   "generated_at": "2026-07-09T17:00:00Z",
   "source": {
     "source_fidelity": "deterministic",
-    "semlink_version": "dev",
+    "semlink_commit": "0123456789abcdef0123456789abcdef01234567",
     "generator_command": "semlink-demo -mode mesh -vehicle-profile ardurover",
     "generator_profile": "mesh-deterministic",
     "no_transmit_posture": "SemLink demo; no SemOps or hardware transmit authority"
@@ -92,6 +92,9 @@ wrapper scripts:
   `sitl-backed`, or `hardware-adjacent`.
 - `SEMLINK_DEMO_ARTIFACT_SEMLINK_VERSION` and
   `SEMLINK_DEMO_ARTIFACT_SEMLINK_COMMIT`: source reference fields.
+  When neither is set, `cmd/semlink-demo` records the Go build's VCS revision
+  or the checkout `HEAD` as `semlink_commit`. Artifact output fails if no real
+  source reference is available.
 - `SEMLINK_DEMO_ARTIFACT_GENERATOR_PROFILE` and
   `SEMLINK_DEMO_ARTIFACT_GENERATOR_COMMAND`: stable generator identity.
 - `SEMLINK_DEMO_ARTIFACT_SIMULATOR_FAMILY`: optional simulator family label.

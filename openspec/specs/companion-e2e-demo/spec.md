@@ -81,8 +81,9 @@ devices to be running.
   enabled
 - **THEN** SemLink writes a `semlink-companion-demo-artifact-v0` JSON artifact
   that embeds the `single-node-companion-demo` report
-- **AND** the artifact records `generated_at`, SemLink source reference,
-  generator profile or command, source fidelity, and no-transmit posture
+- **AND** the artifact records `generated_at`, a real SemLink commit or version
+  source reference, generator profile or command, source fidelity, and
+  no-transmit posture
 - **AND** the embedded report timestamp matches the artifact timestamp
 
 #### Scenario: Simple-mesh artifact is emitted
@@ -93,6 +94,8 @@ devices to be running.
   that embeds the `simple-mesh-companion-demo` report
 - **AND** the artifact preserves raw MAVLink exclusion evidence from the
   embedded report
+- **AND** SemLink rejects artifact output when it cannot resolve a real
+  `semlink_commit` or `semlink_version`
 - **AND** the demo does not require downstream SemOps COP/GCS glass to pass
 
 ### Requirement: Demo Artifact Source Fidelity Is Evidence-Gated
@@ -116,4 +119,3 @@ evidence available to the demo command.
   source metadata such as node ID, vehicle source, and MAVLink system ID
 - **AND** SemLink rejects unsupported or under-evidenced source-fidelity claims
   before writing the artifact
-

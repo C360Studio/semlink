@@ -94,6 +94,8 @@ The demo commands can also emit a `semlink-companion-demo-artifact-v0` envelope
 for downstream SemOps ingestion by setting `SEMLINK_DEMO_ARTIFACT` in the
 wrapper scripts or `-artifact-output` on `cmd/semlink-demo`. The envelope wraps
 the raw report with SemLink producer provenance, source fidelity, generator
-metadata, timestamp coherence, and no-transmit posture. Raw reports remain the
-repo-owned local proof; artifact envelopes are optional downstream handoff
-files and do not make SemOps a runtime dependency.
+metadata, timestamp coherence, a real `semlink_commit` or `semlink_version`,
+and no-transmit posture. Artifact output fails if the CLI cannot resolve a real
+source reference from explicit flags, Go VCS build metadata, or checkout
+`HEAD`. Raw reports remain the repo-owned local proof; artifact envelopes are
+optional downstream handoff files and do not make SemOps a runtime dependency.

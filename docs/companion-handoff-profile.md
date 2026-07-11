@@ -162,9 +162,12 @@ profile, not the architecture limit.
 Set `SEMLINK_DEMO_ARTIFACT` on the single-node or simple-mesh demo scripts to
 write a `semlink-companion-demo-artifact-v0` envelope beside the raw report.
 That envelope is the native producer handoff shape for SemOps ingestion: it
-adds source fidelity, SemLink version or commit, generator metadata,
-no-transmit posture, and optional per-node source metadata without making
-SemOps, SemConnect, or CS API part of the package readiness path.
+adds source fidelity, a real SemLink commit or version, generator metadata,
+no-transmit posture, and optional per-node source metadata. Artifact output
+uses explicit source-ref flags, Go VCS build metadata, or checkout `HEAD`, and
+fails if none can provide a real `semlink_commit` or `semlink_version`; it
+still does not make SemOps, SemConnect, or CS API part of the package readiness
+path.
 
 The local UDP evidence test is the fastest handoff proof. It opens a UDP
 listener, sends one MAVLink heartbeat frame, verifies that the internal

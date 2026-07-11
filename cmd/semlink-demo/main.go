@@ -5,6 +5,8 @@ import (
 	"flag"
 	"fmt"
 	"os"
+	"os/exec"
+	"runtime/debug"
 	"strconv"
 	"strings"
 	"time"
@@ -52,7 +54,7 @@ func main() {
 	)
 	artifactSemLinkVersion := flag.String(
 		"artifact-semlink-version",
-		e2e.DefaultSemLinkArtifactVersion,
+		"",
 		"SemLink version recorded in artifact source metadata",
 	)
 	artifactSemLinkCommit := flag.String(
@@ -109,7 +111,7 @@ func main() {
 		}
 		fmt.Printf("single-node demo report: %s\n", *output)
 		if *artifactOutput != "" {
-			opts := demoArtifactOptions(
+			opts, err := demoArtifactOptions(
 				"single",
 				*vehicleProfile,
 				*artifactSourceFidelity,
@@ -120,7 +122,12 @@ func main() {
 				*artifactSimulatorFamily,
 				*artifactNoTransmitPosture,
 				artifactNodeSources,
+				currentBuildVCSInfo(ctx),
 			)
+			if err != nil {
+				fmt.Fprintf(os.Stderr, "build single-node artifact metadata: %v\n", err)
+				os.Exit(1)
+			}
 			artifact, err := e2e.BuildSingleNodeDemoArtifact(report, opts)
 			if err != nil {
 				fmt.Fprintf(os.Stderr, "build single-node artifact: %v\n", err)
@@ -151,7 +158,7 @@ func main() {
 		}
 		fmt.Printf("simple mesh demo report: %s\n", *output)
 		if *artifactOutput != "" {
-			opts := demoArtifactOptions(
+			opts, err := demoArtifactOptions(
 				"mesh",
 				*vehicleProfile,
 				*artifactSourceFidelity,
@@ -162,7 +169,12 @@ func main() {
 				*artifactSimulatorFamily,
 				*artifactNoTransmitPosture,
 				artifactNodeSources,
+				currentBuildVCSInfo(ctx),
 			)
+			if err != nil {
+				fmt.Fprintf(os.Stderr, "build simple mesh artifact metadata: %v\n", err)
+				os.Exit(1)
+			}
 			artifact, err := e2e.BuildSimpleMeshDemoArtifact(report, opts)
 			if err != nil {
 				fmt.Fprintf(os.Stderr, "build simple mesh artifact: %v\n", err)
@@ -191,23 +203,28 @@ func demoArtifactOptions(
 	simulatorFamily string,
 	noTransmitPosture string,
 	nodeSources artifactNodeSourceFlags,
-) e2e.DemoArtifactOptions {
+	buildInfo buildVCSInfo,
+) (e2e.DemoArtifactOptions, error) {
 	if strings.TrimSpace(generatorProfile) == "" {
 		generatorProfile = mode + "-deterministic"
 	}
 	if strings.TrimSpace(generatorCommand) == "" {
 		generatorCommand = fmt.Sprintf("semlink-demo -mode %s -vehicle-profile %s", mode, vehicleProfile)
 	}
+	resolvedVersion, resolvedCommit, err := resolveSemLinkSourceRef(semlinkVersion, semlinkCommit, buildInfo)
+	if err != nil {
+		return e2e.DemoArtifactOptions{}, err
+	}
 	return e2e.DemoArtifactOptions{
 		SourceFidelity:    sourceFidelity,
-		SemLinkVersion:    semlinkVersion,
-		SemLinkCommit:     semlinkCommit,
+		SemLinkVersion:    resolvedVersion,
+		SemLinkCommit:     resolvedCommit,
 		GeneratorCommand:  generatorCommand,
 		GeneratorProfile:  generatorProfile,
 		SimulatorFamily:   simulatorFamily,
 		NoTransmitPosture: noTransmitPosture,
 		Nodes:             append([]e2e.DemoArtifactNodeSource(nil), nodeSources...),
-	}
+	}, nil
 }
 
 func parseArtifactNodeSource(value string) (e2e.DemoArtifactNodeSource, error) {
@@ -242,4 +259,56 @@ func parseArtifactNodeSource(value string) (e2e.DemoArtifactNodeSource, error) {
 		}
 	}
 	return source, nil
+}
+
+type buildVCSInfo struct {
+	version  string
+	revision string
+}
+
+func currentBuildVCSInfo(ctx context.Context) buildVCSInfo {
+	info, ok := debug.ReadBuildInfo()
+	if !ok {
+		return buildVCSInfo{revision: gitHeadRevision(ctx)}
+	}
+	out := buildVCSInfo{version: strings.TrimSpace(info.Main.Version)}
+	for _, setting := range info.Settings {
+		if setting.Key == "vcs.revision" {
+			out.revision = strings.TrimSpace(setting.Value)
+			break
+		}
+	}
+	if out.revision == "" {
+		out.revision = gitHeadRevision(ctx)
+	}
+	return out
+}
+
+func gitHeadRevision(ctx context.Context) string {
+	if ctx == nil {
+		ctx = context.Background()
+	}
+	output, err := exec.CommandContext(ctx, "git", "rev-parse", "--verify", "HEAD").Output()
+	if err != nil {
+		return ""
+	}
+	return strings.TrimSpace(string(output))
+}
+
+func resolveSemLinkSourceRef(explicitVersion, explicitCommit string, info buildVCSInfo) (string, string, error) {
+	explicitVersion = strings.TrimSpace(explicitVersion)
+	explicitCommit = strings.TrimSpace(explicitCommit)
+	if explicitVersion != "" || explicitCommit != "" {
+		return explicitVersion, explicitCommit, nil
+	}
+	if info.revision != "" {
+		return "", info.revision, nil
+	}
+	if version := strings.TrimSpace(info.version); version != "" && version != "(devel)" {
+		return version, "", nil
+	}
+	return "", "", fmt.Errorf(
+		"artifact output requires a real semlink source ref; " +
+			"set -artifact-semlink-commit or -artifact-semlink-version",
+	)
 }
