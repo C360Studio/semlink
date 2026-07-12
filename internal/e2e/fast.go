@@ -27,11 +27,10 @@ const (
 )
 
 type FastCompanionConfig struct {
-	Nodes           int
-	VehiclesPerNode int
-	VehicleProfile  string
-	Start           time.Time
-	StepElapsed     time.Duration
+	Nodes          int
+	VehicleProfile string
+	Start          time.Time
+	StepElapsed    time.Duration
 }
 
 type FastCompanionReport struct {
@@ -93,10 +92,9 @@ func RunFastCompanionE2E(ctx context.Context, cfg FastCompanionConfig) (FastComp
 	cfg = cfg.withDefaults()
 
 	harness, err := companion.NewHarness(companion.HarnessConfig{
-		Nodes:           cfg.Nodes,
-		NodeIDPrefix:    defaultNodeIDPrefix,
-		VehiclesPerNode: cfg.VehiclesPerNode,
-		Start:           cfg.Start,
+		Nodes:        cfg.Nodes,
+		NodeIDPrefix: defaultNodeIDPrefix,
+		Start:        cfg.Start,
 	})
 	if err != nil {
 		return FastCompanionReport{}, err
@@ -166,9 +164,6 @@ func (cfg FastCompanionConfig) withDefaults() FastCompanionConfig {
 	if cfg.Nodes <= 0 {
 		cfg.Nodes = 2
 	}
-	if cfg.VehiclesPerNode <= 0 {
-		cfg.VehiclesPerNode = 1
-	}
 	if cfg.VehicleProfile == "" {
 		cfg.VehicleProfile = defaultVehicleProfile
 	}
@@ -219,7 +214,7 @@ func fastProfile(node companion.NodeSnapshot, cfg FastCompanionConfig) handoff.P
 	profile.MAVLinkUDPListen = ""
 	profile.MAVLinkUDPHost = ""
 	profile.MAVLinkUDPPort = 0
-	profile.Vehicles = cfg.VehiclesPerNode
+	profile.Vehicles = 1
 	profile.Hz = 1
 	profile.CSAPIURL = ""
 	profile.CommandRuntimeMode = handoff.CommandRuntimeHardwareReadonly

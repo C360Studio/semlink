@@ -9,9 +9,8 @@ import (
 func TestHarnessStepsDeterministicNodesWithIsolatedLocalGraphs(t *testing.T) {
 	start := time.Date(2026, 7, 5, 12, 0, 0, 0, time.UTC)
 	cfg := HarnessConfig{
-		Nodes:           2,
-		VehiclesPerNode: 1,
-		Start:           start,
+		Nodes: 2,
+		Start: start,
 	}
 
 	harness, err := NewHarness(cfg)
@@ -68,9 +67,8 @@ func TestHarnessStepsDeterministicNodesWithIsolatedLocalGraphs(t *testing.T) {
 func TestHarnessDerivesNodeLocalAlerts(t *testing.T) {
 	start := time.Date(2026, 7, 5, 12, 0, 0, 0, time.UTC)
 	harness, err := NewHarness(HarnessConfig{
-		Nodes:           2,
-		VehiclesPerNode: 2,
-		Start:           start,
+		Nodes: 2,
+		Start: start,
 	})
 	if err != nil {
 		t.Fatalf("NewHarness() error = %v", err)
@@ -82,8 +80,8 @@ func TestHarnessDerivesNodeLocalAlerts(t *testing.T) {
 	}
 
 	for _, node := range got.Nodes {
-		if len(node.Vehicles) != 2 {
-			t.Fatalf("node %s vehicle count = %d, want 2", node.NodeID, len(node.Vehicles))
+		if len(node.Vehicles) != 1 {
+			t.Fatalf("node %s vehicle count = %d, want 1", node.NodeID, len(node.Vehicles))
 		}
 		if len(node.Alerts) != 1 {
 			t.Fatalf("node %s alert count = %d, want 1", node.NodeID, len(node.Alerts))
@@ -91,8 +89,8 @@ func TestHarnessDerivesNodeLocalAlerts(t *testing.T) {
 		if node.Alerts[0].Severity != "warning" {
 			t.Fatalf("node %s alert severity = %q, want warning", node.NodeID, node.Alerts[0].Severity)
 		}
-		if node.GraphEntities != 3 {
-			t.Fatalf("node %s graph entity count = %d, want 3", node.NodeID, node.GraphEntities)
+		if node.GraphEntities != 2 {
+			t.Fatalf("node %s graph entity count = %d, want 2", node.NodeID, node.GraphEntities)
 		}
 	}
 }

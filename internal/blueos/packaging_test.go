@@ -88,7 +88,7 @@ func TestBlueOSDockerLabelsDeclareCompanionMeshWithoutHardwareTransmit(t *testin
 	)
 }
 
-func TestBlueOSDockerfileDoesNotBundleHistoricalUI(t *testing.T) {
+func TestBlueOSDockerfileDoesNotBundleDashboardUI(t *testing.T) {
 	dockerfile := readRepoText(t, "docker", "blueos-extension", "Dockerfile")
 
 	assertTextLacks(t, strings.ToLower(dockerfile),
@@ -125,7 +125,7 @@ func TestBlueOSEntrypointLoadsMountedHandoffProfile(t *testing.T) {
 		"-static=${SEMLINK_STATIC_DIR:-}",
 	)
 	if strings.Contains(entrypoint, "/app/ui/dist") {
-		t.Fatal("BlueOS entrypoint should not serve the historical UI by default")
+		t.Fatal("BlueOS entrypoint should not serve bundled dashboard assets by default")
 	}
 }
 

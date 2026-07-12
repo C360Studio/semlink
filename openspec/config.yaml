@@ -61,8 +61,8 @@ context: |
 
   The first OpenSpec-governed slice is the ADR 003 companion-mesh pivot:
 
-  - several boat-local SemLink nodes, each with local SemStreams state;
-  - a deterministic multi-boat simulator and ArduRover / ArduPilot SITL lane
+  - several vehicle-local SemLink nodes, each with local SemStreams state;
+  - a deterministic multi-companion simulator and ArduRover / ArduPilot SITL lane
     without Gazebo as the first autopilot fidelity proof;
   - bounded delta-state mesh synchronization with per-origin watermarks and
     TTLs;

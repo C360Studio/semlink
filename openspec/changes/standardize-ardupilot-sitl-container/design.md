@@ -26,7 +26,7 @@ explicit non-standard ArduPilot refs when compatibility testing requires them.
   transmit.
 - Do not make SemOps build or own the image.
 - Do not claim that the standard Rover container covers PX4, Copter, Plane, or
-  multi-vehicle SITL meshes yet.
+  multi-companion SITL meshes yet.
 
 ## Follow-Ups
 

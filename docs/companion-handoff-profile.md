@@ -11,10 +11,9 @@ Use the copyable profile at:
 configs/handoff/companion.env.example
 ```
 
-Task 1.2 defined the profile contract. Task 1.3 adds parser validation in
-`internal/handoff`, task 1.4 exposes active profile metadata through
-`/api/evidence`, and task 2.1 wires the BlueOS-style entrypoint plus local
-Compose smoke to load this profile.
+The profile is parsed and validated in `internal/handoff`, exposed through
+`/api/evidence`, and loaded by the BlueOS-style entrypoint plus local Compose
+smoke before the companion service starts.
 
 ## Profile Fields
 
@@ -110,7 +109,7 @@ The machine-readable evidence posture for each of those entries is
 | Field | Status | Purpose |
 | --- | --- | --- |
 | `SEMLINK_COMMAND_RUNTIME_MODE` | wired | Handoff command posture, initially `hardware-readonly`. |
-| `SEMLINK_HARDWARE_TRANSMIT_ENABLED` | wired fail-closed | Must remain `false` for this OpenSpec change. |
+| `SEMLINK_HARDWARE_TRANSMIT_ENABLED` | wired fail-closed | Must stay `false` before accepted transmit work. |
 
 The deployable handoff may run near hardware, but hardware MAVLink command
 transmit remains blocked until a later accepted OpenSpec change defines
@@ -145,7 +144,7 @@ Use these lanes in increasing fidelity:
 
 - Fast companion e2e: `go test ./internal/e2e`
 - Single-node companion demo: `./scripts/demo-single-companion.sh`
-- Simple local mesh demo: `./scripts/demo-mesh-companions.sh`
+- Multi-companion local mesh demo: `./scripts/demo-mesh-companions.sh`
 - Local UDP evidence test:
   `go test ./internal/gcs -run TestUDPEvidenceSmokeProjectsExternalMAVLinkState`
 - Optional ArduPilot SITL artifact e2e:
@@ -175,7 +174,8 @@ The local UDP evidence test is the fastest handoff proof. It opens a UDP
 listener, sends one MAVLink heartbeat frame, verifies that the internal
 simulator is disabled for an external MAVLink input, and reads the projected
 vehicle state back through `/api/evidence`. It does not require Docker,
-ArduPilot, BlueOS, sibling checkouts, or physical Navigator hardware.
+ArduPilot, BlueOS, SemOps, SemConnect/CS API, or physical Navigator hardware.
+It still uses the SemLink Go module and pinned SemStreams module dependency.
 
 The BlueOS-style package smoke proves the deployable container lifecycle and
 local API surface. It starts the package with the companion profile, then checks

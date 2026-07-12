@@ -3,8 +3,6 @@ services:
     build:
       context: ${SEMLINK_ROOT:-.}
       dockerfile: docker/blueos-extension/Dockerfile
-      additional_contexts:
-        semstreams: ${SEMSTREAMS_ROOT:-../semstreams}
     env_file:
       - ${SEMLINK_HANDOFF_PROFILE_FILE:-./configs/handoff/companion.env.example}
     environment:

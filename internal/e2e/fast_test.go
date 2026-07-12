@@ -13,11 +13,10 @@ func TestRunFastCompanionE2EProducesRepoOwnedReport(t *testing.T) {
 	start := time.Date(2026, 7, 9, 15, 0, 0, 0, time.UTC)
 
 	report, err := RunFastCompanionE2E(context.Background(), FastCompanionConfig{
-		Nodes:           2,
-		VehiclesPerNode: 1,
-		VehicleProfile:  "mavlink-generic",
-		Start:           start,
-		StepElapsed:     20 * time.Second,
+		Nodes:          2,
+		VehicleProfile: "mavlink-generic",
+		Start:          start,
+		StepElapsed:    20 * time.Second,
 	})
 	if err != nil {
 		t.Fatalf("RunFastCompanionE2E() error = %v", err)
@@ -36,7 +35,7 @@ func TestRunFastCompanionE2EProducesRepoOwnedReport(t *testing.T) {
 		if node.NodeID == "" {
 			t.Fatalf("node has empty ID: %#v", node)
 		}
-		if node.VehicleCount == 0 || node.GraphEntities == 0 {
+		if node.VehicleCount != 1 || node.GraphEntities == 0 {
 			t.Fatalf("node missing projected state: %#v", node)
 		}
 	}

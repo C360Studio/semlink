@@ -11,8 +11,19 @@
 - [x] 2.1 Document the standard image/tag and downstream e2e usage.
 - [x] 2.2 Add static tests that guard the standard container contract and
   prevent accidental drift back to `master`.
-- [ ] 2.3 Build the Docker image and run the env-gated real SITL e2e on a host
+- [x] 2.3 Build the Docker image and run the env-gated real SITL e2e on a host
   or CI runner with Docker network support.
+  - 2026-07-12 evidence:
+    `scripts/ardupilot-sitl-image-build.sh` built
+    `c360studio/semlink-ardupilot-sitl:rover-4.6.3` from `Rover-4.6.3`.
+  - Docker-backed e2e passed:
+
+    ```bash
+    SEMLINK_E2E_SITL=1 \
+    SEMLINK_E2E_SITL_DOCKER_IMAGE=c360studio/semlink-ardupilot-sitl:rover-4.6.3 \
+    SEMLINK_E2E_SITL_TIMEOUT=4m \
+    go test ./internal/e2e -run TestArduPilotSITLArtifactE2E -count=1 -v -timeout 5m
+    ```
 
 ## 3. Validation
 

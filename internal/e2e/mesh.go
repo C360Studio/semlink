@@ -18,12 +18,11 @@ const (
 )
 
 type SimpleMeshDemoConfig struct {
-	Nodes           int
-	VehiclesPerNode int
-	VehicleProfile  string
-	Start           time.Time
-	StepElapsed     time.Duration
-	MaxDiffItems    int
+	Nodes          int
+	VehicleProfile string
+	Start          time.Time
+	StepElapsed    time.Duration
+	MaxDiffItems   int
 }
 
 type SimpleMeshDemoReport struct {
@@ -62,10 +61,9 @@ func RunSimpleMeshDemo(ctx context.Context, cfg SimpleMeshDemoConfig) (SimpleMes
 	cfg = cfg.withDefaults()
 
 	harness, err := companion.NewHarness(companion.HarnessConfig{
-		Nodes:           cfg.Nodes,
-		NodeIDPrefix:    defaultNodeIDPrefix,
-		VehiclesPerNode: cfg.VehiclesPerNode,
-		Start:           cfg.Start,
+		Nodes:        cfg.Nodes,
+		NodeIDPrefix: defaultNodeIDPrefix,
+		Start:        cfg.Start,
 	})
 	if err != nil {
 		return SimpleMeshDemoReport{}, err
@@ -85,7 +83,7 @@ func RunSimpleMeshDemo(ctx context.Context, cfg SimpleMeshDemoConfig) (SimpleMes
 		Kind:              SimpleMeshReportKind,
 		GeneratedAt:       step.At,
 		VehicleProfile:    cfg.VehicleProfile,
-		ExpectedSummaries: cfg.Nodes * cfg.VehiclesPerNode,
+		ExpectedSummaries: cfg.Nodes,
 	}
 	report.addAssertion("local-mesh-runtimes", len(runtimes) == cfg.Nodes, fmt.Sprintf("nodes=%d", len(runtimes)))
 
@@ -113,9 +111,6 @@ func RunSimpleMeshDemo(ctx context.Context, cfg SimpleMeshDemoConfig) (SimpleMes
 func (cfg SimpleMeshDemoConfig) withDefaults() SimpleMeshDemoConfig {
 	if cfg.Nodes <= 0 {
 		cfg.Nodes = 3
-	}
-	if cfg.VehiclesPerNode <= 0 {
-		cfg.VehiclesPerNode = 1
 	}
 	if cfg.VehicleProfile == "" {
 		cfg.VehicleProfile = defaultVehicleProfile

@@ -509,7 +509,7 @@ func (s *Server) buildCSAPILens(ctx context.Context, snapshot Snapshot, vehicle 
 				Label:  csapiObservationHistoryLabel(stream),
 				Kind:   "History",
 				Detail: fmt.Sprintf("%d records", count),
-				Status: "historical",
+				Status: "recorded",
 			})
 			edges = append(edges, GraphEdge{From: streamID, To: obsID, Label: "records"})
 			if len(facts) < 12 {
@@ -700,7 +700,7 @@ func (s *Server) buildOperatorCOPCSAPILens(ctx context.Context, base *url.URL, o
 				Label:  csapiObservationHistoryLabel(stream),
 				Kind:   "History",
 				Detail: fmt.Sprintf("%d records", count),
-				Status: "historical",
+				Status: "recorded",
 			})
 			edges = append(edges, GraphEdge{From: streamID, To: obsID, Label: "records"})
 		}

@@ -11,7 +11,7 @@ maintainer/company, readme, links, type, and tags. SemLink uses
 remains local APIs and CLI/config rather than a repo-owned dashboard.
 
 The BlueOS handoff image is API/evidence-only by default. It does not build or
-bundle the historical SemGCS Svelte UI; the root demo image can keep that legacy
+bundle the SemGCS Svelte demo UI; the root demo image can keep that dashboard
 surface until a later migration removes or rehomes it.
 
 Sources:
@@ -33,7 +33,9 @@ Those commands write JSON reports under `.artifacts` and do not require Docker,
 BlueOS, Navigator hardware, Gazebo, SITL, SemOps, semstreams-ui, or
 SemConnect/CS API. They prove the companion API/evidence shape, command-safety
 posture, native SemOps readback adapter compatibility, and simple selected-state
-mesh catch-up before package lifecycle enters the picture.
+mesh catch-up before package lifecycle enters the picture. They still run
+through the SemLink Go module and the pinned SemStreams module version in
+`go.mod`.
 
 The local smoke runs the extension container with embedded SemStreams runtime
 using the companion handoff profile, then verifies:
@@ -45,9 +47,6 @@ using the companion handoff profile, then verifies:
 ```bash
 scripts/blueos-extension-smoke.sh
 ```
-
-The smoke expects a sibling SemStreams checkout. Override with
-`SEMSTREAMS_ROOT=/path/to/semstreams` when needed.
 
 The smoke defaults to `configs/handoff/companion.env.example`. Override with
 `SEMLINK_HANDOFF_PROFILE_FILE=/path/to/companion.env` to run a copied local
@@ -62,7 +61,6 @@ transmit posture.
 Run package smokes from the SemLink checkout with these local inputs:
 
 - Docker with Compose v2 access.
-- A sibling SemStreams checkout, or `SEMSTREAMS_ROOT=/path/to/semstreams`.
 - A handoff profile file. The default is
   `configs/handoff/companion.env.example`; use a copied profile for local
   boats or alternate ports.
@@ -88,10 +86,9 @@ Run the full local BlueOS-style lifecycle smoke:
 scripts/blueos-extension-smoke.sh
 ```
 
-Run with explicit checkouts, profile, and host port:
+Run with an explicit profile and host port:
 
 ```bash
-SEMSTREAMS_ROOT=/path/to/semstreams \
 SEMLINK_HANDOFF_PROFILE_FILE=/path/to/companion.env \
 SEMLINK_BLUEOS_HOST_PORT=8081 \
 scripts/blueos-extension-smoke.sh

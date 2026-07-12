@@ -16,7 +16,7 @@ that need local state, local rules, and intermittent mesh replication.
 The early-adopter shape is BlueRobotics-style hardware: BlueOS on a Raspberry Pi
 class companion, Navigator as the vehicle I/O board, and ArduRover / boat-class
 MAVLink vehicles. The realistic demo is not "one big GCS sees everything." It
-is `N` boat-local SemLink nodes running beside the autopilot, exchanging selected
+is `N` vehicle-local SemLink nodes running beside the autopilot, exchanging selected
 semantic current state across unreliable RF links, and giving operators or
 SemOps a coherent downstream view when connectivity permits.
 
@@ -64,7 +64,7 @@ SemOps owns:
 - kitchen-sink COP / fusion UX
 - GCS / operator glass
 - cross-feed assimilation and richer operational dashboards
-- multi-source correlation beyond the boat-local mesh
+- multi-source correlation beyond the vehicle-local mesh
 - campaign-scale or incident-scale workflows
 
 semstreams-ui may consume SemLink evidence for generic ops/debug views, but
@@ -85,14 +85,14 @@ egress or interoperability surface, not the internal swarm protocol.
 
 ## Demo Shape
 
-The next demo should show several SemLink nodes, one per simulated boat. Each
+The next demo should show several SemLink nodes, one per simulated vehicle. Each
 node has its own local SemStreams runtime and vehicle projection. Nodes exchange
 mesh summaries over a deliberately unreliable link harness so reconnect,
 partition, and duplicate-delivery behavior are visible.
 
 The first fidelity ladder is:
 
-1. Deterministic multi-boat SemLink simulator, no hardware.
+1. Deterministic multi-companion SemLink simulator, no hardware.
 2. ArduRover / ArduPilot SITL without Gazebo as the first autopilot parity lane.
 3. Optional PX4 or Gazebo lanes only when the claim needs that simulator family.
 4. BlueOS extension packaging and read-only hardware smoke.
@@ -187,7 +187,7 @@ envelope and merge semantics are stable.
 ## Consequences
 
 SemLink stops trying to become the COP. That work belongs in SemOps. SemLink can
-be sharper and more credible as the boat-local companion service that turns
+be sharper and more credible as the vehicle-local companion service that turns
 MAVLink telemetry, local rules, and intermittent peer state into governed
 semantic state.
 

@@ -52,18 +52,16 @@ func RunSingleNodeDemo(ctx context.Context, cfg SingleNodeDemoConfig) (SingleNod
 		ctx = context.Background()
 	}
 	fastCfg := FastCompanionConfig{
-		Nodes:           1,
-		VehiclesPerNode: 1,
-		VehicleProfile:  cfg.VehicleProfile,
-		Start:           cfg.Start,
-		StepElapsed:     cfg.StepElapsed,
+		Nodes:          1,
+		VehicleProfile: cfg.VehicleProfile,
+		Start:          cfg.Start,
+		StepElapsed:    cfg.StepElapsed,
 	}.withDefaults()
 
 	harness, err := companion.NewHarness(companion.HarnessConfig{
-		Nodes:           1,
-		NodeIDPrefix:    defaultNodeIDPrefix,
-		VehiclesPerNode: 1,
-		Start:           fastCfg.Start,
+		Nodes:        1,
+		NodeIDPrefix: defaultNodeIDPrefix,
+		Start:        fastCfg.Start,
 	})
 	if err != nil {
 		return SingleNodeDemoReport{}, err

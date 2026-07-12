@@ -75,3 +75,25 @@ func TestDemoArtifactOptionsUsesResolvedVCSRevision(t *testing.T) {
 		t.Fatalf("generator profile = %q", opts.GeneratorProfile)
 	}
 }
+
+func TestDemoArtifactOptionsPreservesExplicitGeneratorCommand(t *testing.T) {
+	opts, err := demoArtifactOptions(
+		"mesh",
+		"ardurover",
+		"",
+		"",
+		"",
+		"",
+		"semlink-demo -mode mesh -nodes 3 -vehicle-profile ardurover",
+		"",
+		"",
+		nil,
+		buildVCSInfo{version: "(devel)", revision: "feedface"},
+	)
+	if err != nil {
+		t.Fatalf("demoArtifactOptions() error = %v", err)
+	}
+	if opts.GeneratorCommand != "semlink-demo -mode mesh -nodes 3 -vehicle-profile ardurover" {
+		t.Fatalf("generator command = %q", opts.GeneratorCommand)
+	}
+}

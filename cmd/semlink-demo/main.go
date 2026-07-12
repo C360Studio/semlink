@@ -47,7 +47,6 @@ func main() {
 		"vehicle profile label for the simulated MAVLink runtime",
 	)
 	nodes := flag.Int("nodes", 3, "number of local companion nodes for mesh mode")
-	vehiclesPerNode := flag.Int("vehicles-per-node", 1, "number of simulated MAVLink vehicles per companion node")
 	artifactOutput := flag.String(
 		"artifact-output",
 		"",
@@ -160,9 +159,8 @@ func main() {
 			*output = e2e.DefaultSimpleMeshReportPath
 		}
 		report, err := e2e.RunSimpleMeshDemo(ctx, e2e.SimpleMeshDemoConfig{
-			Nodes:           *nodes,
-			VehiclesPerNode: *vehiclesPerNode,
-			VehicleProfile:  *vehicleProfile,
+			Nodes:          *nodes,
+			VehicleProfile: *vehicleProfile,
 		})
 		if err != nil {
 			fmt.Fprintf(os.Stderr, "simple mesh demo failed: %v\n", err)
@@ -174,6 +172,14 @@ func main() {
 		}
 		fmt.Printf("simple mesh demo report: %s\n", *output)
 		if *artifactOutput != "" {
+			generatorCommand := *artifactGeneratorCommand
+			if strings.TrimSpace(generatorCommand) == "" {
+				generatorCommand = fmt.Sprintf(
+					"semlink-demo -mode mesh -nodes %d -vehicle-profile %s",
+					*nodes,
+					*vehicleProfile,
+				)
+			}
 			opts, err := demoArtifactOptions(
 				"mesh",
 				*vehicleProfile,
@@ -181,7 +187,7 @@ func main() {
 				*artifactSemLinkVersion,
 				*artifactSemLinkCommit,
 				*artifactGeneratorProfile,
-				*artifactGeneratorCommand,
+				generatorCommand,
 				*artifactSimulatorFamily,
 				*artifactNoTransmitPosture,
 				artifactNodeSources,

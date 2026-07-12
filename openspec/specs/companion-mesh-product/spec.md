@@ -23,7 +23,7 @@ behavior.
 - **AND** SemOps owns broad COP and fusion product behavior
 - **AND** SemConnect owns standards-facing CS API bridge and conformance claims
 
-#### Scenario: SemGCS remains historical baseline
+#### Scenario: SemGCS remains original baseline
 
 - **WHEN** future work references ADR 001 or the SemGCS demo
 - **THEN** it treats that work as implemented prior art
@@ -111,25 +111,25 @@ evidence for external operator surfaces without adding repo-owned GCS glass.
 - **AND** they do not describe CS API or SemConnect as SemLink MVP runtime
   responsibilities
 
-### Requirement: Historical SemGCS Runtime Surface Is Migrated
+### Requirement: SemGCS Runtime Surface Is Migrated
 
-SemLink SHALL migrate the historical SemGCS-named runtime and package surfaces
+SemLink SHALL migrate the SemGCS-named runtime and package surfaces
 toward a companion-service identity without removing working companion runtime
 capability before equivalent handoff evidence exists.
 
-#### Scenario: Historical runtime names are referenced
+#### Scenario: SemGCS runtime names are referenced
 
 - **WHEN** handoff specs, docs, Docker metadata, or code reference
-  `cmd/semgcs-demo`, `internal/gcs`, or the historical Svelte UI
+  `cmd/semgcs-demo`, `internal/gcs`, or the Svelte demo UI
 - **THEN** they treat those surfaces as migration candidates toward a
   companion-service runtime such as `cmd/semlink-companion` and
   companion/evidence/API packages
 - **AND** they do not treat the SemGCS name or repo-owned dashboard as the
   forward product surface
 
-#### Scenario: Historical UI or static serving is retired
+#### Scenario: SemGCS UI or static serving is retired
 
-- **WHEN** a future slice removes the historical SemGCS UI or static serving
+- **WHEN** a future slice removes the SemGCS UI or static serving
   from the deployable handoff
 - **THEN** `/api/health`, `/register_service`, and `/api/evidence` still prove
   package readiness without a SemLink-owned dashboard

@@ -3,7 +3,6 @@
 FROM golang:1.26.3-bookworm AS builder
 WORKDIR /src
 COPY go.mod go.sum ./
-COPY --from=semstreams . /semstreams
 RUN --mount=type=cache,target=/go/pkg/mod go mod download
 COPY . .
 RUN --mount=type=cache,target=/root/.cache/go-build \

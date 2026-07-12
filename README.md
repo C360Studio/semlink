@@ -1,10 +1,9 @@
 # SemLink
 
-SemLink is pivoting from the implemented SemGCS ground-control demo into a
-SemStreams-consuming MAVLink companion mesh service for vehicle-local state,
-local rules, and intermittent peer replication. ADR 003 is the forward product
-boundary; ADR 001 remains the historical boundary for the implemented SemGCS
-demo.
+SemLink is a SemStreams-consuming MAVLink companion mesh service for
+vehicle-local state, local rules, and intermittent peer replication. It grew out
+of the implemented SemGCS ground-control demo; ADR 003 is the forward product
+boundary, and ADR 001 records the original SemGCS demo boundary.
 
 SemLink owns MAVLink decoding, simulator/replay adapters, companion runtime,
 CLI/config shape, local status/evidence APIs, and robotics language. SemOps
@@ -13,21 +12,59 @@ SemStreams owns the semantic substrate: NATS/JetStream, graph-ingest,
 `ENTITY_STATES`, mutation/query subjects, projection contracts, and
 indexing-profile policy.
 
-## Run The Demo
+## Quick Start
 
-The current legacy demo uses Docker Compose and keeps two NATS/SemStreams
-stacks:
+Start with the repo-owned companion proofs. Beyond the Go toolchain, these
+commands do not require Docker, BlueOS, Navigator hardware, Gazebo, SemOps,
+SemConnect, semstreams-ui, SITL, or physical MAVLink devices:
+
+```bash
+go test ./internal/e2e -count=1
+./scripts/demo-single-companion.sh
+./scripts/demo-mesh-companions.sh
+```
+
+The demo scripts write JSON reports under `.artifacts/`. Add
+`SEMLINK_DEMO_ARTIFACT=<path>` when you also want the downstream
+`semlink-companion-demo-artifact-v0` envelope for SemOps ingestion:
+
+```bash
+SEMLINK_DEMO_ARTIFACT=.artifacts/semlink-demo-single/artifact.json \
+  ./scripts/demo-single-companion.sh
+```
+
+Use the path that matches the claim you need to prove:
+
+- Fast local confidence: `go test ./internal/e2e -count=1`
+- Single-node evidence report: `./scripts/demo-single-companion.sh`
+- Multi-companion mesh evidence report: `./scripts/demo-mesh-companions.sh`
+- UI or downstream consumer contract:
+  [`docs/evidence-api.md`](docs/evidence-api.md)
+- ArduPilot SITL artifact proof:
+  [`docs/sitl-ardurover.md`](docs/sitl-ardurover.md)
+- BlueOS-style package lifecycle:
+  [`docs/blueos-extension.md`](docs/blueos-extension.md)
+- Navigator-class read-only hardware smoke:
+  [`docs/navigator-readonly-smoke.md`](docs/navigator-readonly-smoke.md)
+- Optional SemConnect / CS API bridge demo:
+  [`docs/demo-script.md`](docs/demo-script.md)
+
+## Optional CS API Bridge Demo
+
+This retained bridge demo uses Docker Compose to prove the optional SemConnect / CS API standards
+projection and the Svelte demo UI surface. It is not the SemLink quick-start path,
+MVP companion hot path, or package-readiness dependency. It keeps two
+NATS/SemStreams stacks:
 
 - SemLink stack: raw MAVLink stream, current-state graph, alerts, command
-  intent, local JSON/SSE APIs, and the historical Svelte demo UI.
+  intent, local JSON/SSE APIs, and the Svelte demo UI.
 - SemConnect stack: CS API Systems, Datastreams, Observations, SystemEvents,
   and Commands.
 - HTTP bridge: curated, decimated standards projection from SemLink into
   SemConnect.
 
-For now, SemLink layers its services on top of SemConnect's conformance Compose
-file and builds against a sibling SemStreams checkout. Clone `semconnect` and
-`semstreams` beside `semlink`, then run from the `semlink` checkout:
+To run this optional bridge, clone `semconnect` beside `semlink`, then run from
+the `semlink` checkout:
 
 ```bash
 ./scripts/demo-up.sh
@@ -35,7 +72,7 @@ file and builds against a sibling SemStreams checkout. Clone `semconnect` and
 
 Then inspect:
 
-- SemLink local API / historical UI: `http://127.0.0.1:8080`
+- SemLink local API / Svelte demo UI: `http://127.0.0.1:8080`
 - SemConnect CS API: `http://127.0.0.1:48080`
 
 The local UI-consumer contract is documented in
@@ -62,8 +99,8 @@ cd ../semlink
 ./scripts/demo-up.sh
 ```
 
-If your sibling checkouts live somewhere else, set `SEMCONNECT_ROOT` and
-`SEMSTREAMS_ROOT` before running the script.
+If the sibling SemConnect checkout lives somewhere else, set `SEMCONNECT_ROOT`
+before running the script.
 
 Tear the stack down with:
 
@@ -105,8 +142,8 @@ standards-facing CS API view.
 
 For quick SemLink-only work, run without Docker Compose. This starts embedded
 NATS JetStream and the SemStreams graph-ingest component in-process. The
-current binary still serves the historical Svelte UI, so build `ui/dist` until
-that demo surface is retired:
+current binary serves the Svelte demo UI, so build `ui/dist` when you want that
+local dashboard:
 
 ```bash
 npm --prefix ui install
@@ -114,7 +151,7 @@ npm --prefix ui run build
 go run ./cmd/semgcs-demo -embedded-nats=true -vehicles=12 -hz=20
 ```
 
-Then use `http://127.0.0.1:8080` for the local API and historical UI. A shared
+Then use `http://127.0.0.1:8080` for the local API and Svelte demo UI. A shared
 NATS topology is a later integration mode and should run one deliberate owner
 for each SemStreams graph processor.
 
@@ -132,6 +169,7 @@ baseline is now tracked in main specs:
 - `openspec/specs/mavlink-companion-runtime/spec.md`
 - `openspec/specs/mesh-synchronization/spec.md`
 - `openspec/specs/rules-and-command-safety/spec.md`
+- `openspec/specs/companion-e2e-demo/spec.md`
 
 The completed pivot change is archived under
 `openspec/changes/archive/2026-07-07-pivot-companion-mesh/`.
@@ -143,7 +181,7 @@ openspec validate --all --strict
 ## Architecture
 
 ```text
-sim/PX4 adapter
+simulator / replay / ArduPilot SITL / MAVLink UDP input
   -> internal/mavlink decoder
   -> SemStreams circular buffer
   -> MAVLINK_RAW JetStream stream
@@ -151,7 +189,7 @@ sim/PX4 adapter
   -> SemStreams graph.mutation.entity.create_with_triples / update_with_triples
   -> SemStreams graph.ingest.query.entity
   -> local JSON/SSE status and evidence APIs
-  -> optional historical Svelte demo UI
+  -> optional Svelte demo UI
   -> optional SemConnect CS API bridge
 ```
 
@@ -161,7 +199,7 @@ into one signal-profiled graph entity per vehicle. Alerts and command intents
 are control-profiled graph entities.
 
 The optional CS API bridge publishes a curated, low-rate standards view:
-Systems for UAVs, Datastreams for selected telemetry rollups, OMS
+Systems for vehicles, Datastreams for selected telemetry rollups, OMS
 Observations, SystemEvents for alerts, and Command metadata for operator
 intent. Raw MAVLink frames do not pass through CS API.
 
@@ -179,7 +217,7 @@ operator positions, markers, and observed GeoChat land as governed `cop.*`
 graph entities and are included in the CS API bridge when `-csapi-url` is
 enabled.
 
-The local API and historical dashboard include a source-aware graph lens for the
+The local API and Svelte demo dashboard include a source-aware graph lens for the
 selected vehicle or TAK COP entity: `SemLink Graph` shows the operational
 SemStreams state, while `SemConnect Projection` shows the downstream CS API
 materialization when `-csapi-url` is enabled.
@@ -187,7 +225,7 @@ materialization when `-csapi-url` is enabled.
 ## Roadmap
 
 The ADR 003 companion-mesh pivot is now the accepted baseline: several
-boat-local SemLink nodes, each with a local MAVLink feed and local SemStreams
+vehicle-local SemLink nodes, each with a local MAVLink feed and local SemStreams
 state, exchanging selected current-state summaries over unreliable links.
 SemLink exposes those facts through CLI/config and UI-consumable APIs for
 SemOps or semstreams-ui, not through repo-owned GCS glass.

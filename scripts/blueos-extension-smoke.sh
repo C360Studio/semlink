@@ -3,8 +3,6 @@ set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 SEMLINK_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
-DEMO_ROOT="$(cd "$SEMLINK_ROOT/.." && pwd)"
-SEMSTREAMS_ROOT="${SEMSTREAMS_ROOT:-$DEMO_ROOT/semstreams}"
 COMPOSE_PROJECT_NAME="${COMPOSE_PROJECT_NAME:-semlink-blueos-smoke}"
 SEMLINK_HANDOFF_PROFILE_FILE="${SEMLINK_HANDOFF_PROFILE_FILE:-$SEMLINK_ROOT/configs/handoff/companion.env.example}"
 
@@ -22,12 +20,6 @@ set +a
 SEMLINK_BLUEOS_HOST_PORT="${SEMLINK_BLUEOS_HOST_PORT:-8081}"
 SEMLINK_NODE_ID="${SEMLINK_NODE_ID:-semlink-local}"
 
-if [[ ! -f "$SEMSTREAMS_ROOT/go.mod" ]]; then
-  echo "missing SemStreams checkout: $SEMSTREAMS_ROOT" >&2
-  echo "clone semstreams beside semlink, or set SEMSTREAMS_ROOT=/path/to/semstreams" >&2
-  exit 1
-fi
-
 if ! command -v docker >/dev/null 2>&1; then
   echo "docker is required for the BlueOS extension lifecycle smoke" >&2
   exit 127
@@ -39,7 +31,6 @@ if ! command -v curl >/dev/null 2>&1; then
 fi
 
 export SEMLINK_ROOT
-export SEMSTREAMS_ROOT
 export SEMLINK_HANDOFF_PROFILE_FILE
 export SEMLINK_BLUEOS_HOST_PORT
 

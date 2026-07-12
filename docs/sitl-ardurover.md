@@ -81,8 +81,8 @@ The defaults live in `docker/ardupilot-sitl/standard.env`. Override
 `ARDUPILOT_REF`, `ARDUPILOT_SITL_IMAGE`, or `ARDUPILOT_SITL_TAG` only when the
 evidence record names the non-standard image/ref used for that run.
 
-Downstream repos should prefer the published or locally built canonical image
-instead of installing host `sim_vehicle.py`:
+For shared SemLink/SemOps evidence, prefer the published or locally built
+canonical image instead of installing host `sim_vehicle.py`:
 
 ```bash
 SEMLINK_E2E_SITL=1 \
@@ -91,10 +91,9 @@ SEMLINK_E2E_SITL_TIMEOUT=4m \
 go test ./internal/e2e -run TestArduPilotSITLArtifactE2E -count=1 -v -timeout 5m
 ```
 
-The wrapper follows the existing demo compose shape, so it expects sibling
-`semconnect` and `semstreams` checkouts. Override their locations with
-`SEMCONNECT_ROOT` and `SEMSTREAMS_ROOT`. Override the profile with
-`SEMLINK_HANDOFF_PROFILE_FILE=/path/to/companion.env`.
+The wrapper follows the existing demo compose shape, so it expects a sibling
+`semconnect` checkout. Override its location with `SEMCONNECT_ROOT`. Override
+the profile with `SEMLINK_HANDOFF_PROFILE_FILE=/path/to/companion.env`.
 
 ## Evidence Checks
 

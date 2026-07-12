@@ -19,7 +19,6 @@ type AlertSnapshot = projector.AlertPayload
 type HarnessConfig struct {
 	Nodes           int
 	NodeIDPrefix    string
-	VehiclesPerNode int
 	Start           time.Time
 	ProjectorConfig projector.Config
 }
@@ -56,12 +55,6 @@ func NewHarness(cfg HarnessConfig) (*Harness, error) {
 	if cfg.Nodes <= 0 {
 		cfg.Nodes = 1
 	}
-	if cfg.VehiclesPerNode <= 0 {
-		cfg.VehiclesPerNode = 1
-	}
-	if cfg.VehiclesPerNode > 255 {
-		return nil, fmt.Errorf("vehicles per node %d exceeds MAVLink system id capacity", cfg.VehiclesPerNode)
-	}
 	if cfg.NodeIDPrefix == "" {
 		cfg.NodeIDPrefix = "boat"
 	}
@@ -73,7 +66,7 @@ func NewHarness(cfg HarnessConfig) (*Harness, error) {
 	for i := 0; i < cfg.Nodes; i++ {
 		nodes = append(nodes, &Node{
 			id:        fmt.Sprintf("%s-%03d", cfg.NodeIDPrefix, i+1),
-			sim:       mavlink.NewSimulatorWithStart(cfg.VehiclesPerNode, cfg.Start),
+			sim:       mavlink.NewSimulatorWithStart(1, cfg.Start),
 			projector: projector.New(cfg.ProjectorConfig),
 			graph:     NewLocalGraph(),
 		})

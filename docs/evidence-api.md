@@ -84,11 +84,13 @@ not a repo-owned GCS UI.
 
 The single-node report records `/api/health`, `/register_service`,
 `/api/evidence`, command-safety posture, simulator-only command evidence, and
-fake SemOps native readback results. The simple mesh report records N companion
-nodes, static peer URLs, watermark/diff catch-up, TTL/merge posture, selected
-summary counts, and raw MAVLink exclusion. These demos do not require SemOps,
+fake SemOps native readback results. The simple mesh report defaults to three
+companion nodes with one simulated vehicle per node and records static peer URLs,
+watermark/diff catch-up, TTL/merge posture, selected summary counts, and raw
+MAVLink exclusion. These demos do not require SemOps,
 semstreams-ui, SemConnect/CS API, BlueOS, Navigator hardware, Gazebo, SITL, or
-physical MAVLink devices.
+physical MAVLink devices. They do use the SemLink Go module and the pinned
+SemStreams module version in `go.mod`.
 
 The demo commands can also emit a `semlink-companion-demo-artifact-v0` envelope
 for downstream SemOps ingestion by setting `SEMLINK_DEMO_ARTIFACT` in the

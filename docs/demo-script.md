@@ -1,9 +1,9 @@
 # SemLink Companion Evidence Demo Script
 
-This script runs the historical SemGCS UI-backed demo. The forward SemLink
-product shape is a companion service with CLI/config and UI-consumable local
-APIs; SemOps owns GCS/COP glass, and semstreams-ui can provide generic
-ops/debug views.
+This document covers the SemLink-owned companion evidence demos and the optional
+SemGCS UI-backed bridge demo. The forward SemLink product shape is a
+companion service with CLI/config and UI-consumable local APIs; SemOps owns
+GCS/COP glass, and semstreams-ui can provide generic ops/debug views.
 
 ## Lightweight Companion Demos
 
@@ -37,18 +37,18 @@ The single-node report includes:
   evidence; and
 - fake SemOps native readback contract evidence without a CS API hot path.
 
-Treat missing demo report artifacts as a release waiver item until the matching
-OpenSpec task is implemented and validated.
+Treat a missing demo report or requested artifact as a release blocker unless a
+run-specific waiver explains the environment failure.
 
-Run the simple local mesh demo with N companion nodes:
+Run the simple local mesh demo. By default it starts three companion nodes with
+one simulated MAVLink vehicle per node:
 
 ```bash
 ./scripts/demo-mesh-companions.sh
 ```
 
 The command writes `.artifacts/semlink-demo-mesh/report.json` by default. Set
-`SEMLINK_DEMO_NODES=<n>`, `SEMLINK_DEMO_VEHICLES_PER_NODE=<n>`,
-`SEMLINK_DEMO_REPORT=/path/to/report.json`, or
+`SEMLINK_DEMO_NODES=<n>`, `SEMLINK_DEMO_REPORT=/path/to/report.json`, or
 `SEMLINK_DEMO_VEHICLE_PROFILE=<profile>` to adjust the run.
 
 Set `SEMLINK_DEMO_ARTIFACT=.artifacts/semlink-demo-mesh/artifact.json` to also
@@ -59,7 +59,7 @@ per-node source metadata.
 
 The simple mesh report includes:
 
-- deterministic companion node IDs and static local peer URLs;
+- deterministic companion node IDs, vehicle counts, and static local peer URLs;
 - initial and final selected-summary counts for each node;
 - peer count, applied diff count, diff item count, and watermark count;
 - TTL/merge posture for selected state catch-up; and
@@ -133,19 +133,21 @@ That wrapper fetches the running companion node's `/api/evidence` and emits
 observed. It does not require SemOps, SemConnect, CS API, BlueOS, Navigator
 hardware, Gazebo, or GCS glass in the producer path.
 
-## Historical Compose Demo
+## Optional CS API Bridge Demo
 
-Run from the `semlink` checkout with `semconnect` and `semstreams` cloned
-beside it:
+This retained bridge demo proves the optional SemConnect / CS API standards
+projection and the Svelte demo UI surface. It is not required for the companion
+quick start, MVP hot path, or package readiness. Run from the `semlink` checkout
+with `semconnect` cloned beside it:
 
 ```bash
 ./scripts/demo-up.sh
 ```
 
-If the sibling checkouts live elsewhere, set `SEMCONNECT_ROOT` and
-`SEMSTREAMS_ROOT` before running the script.
+If the sibling SemConnect checkout lives elsewhere, set `SEMCONNECT_ROOT` before
+running the script.
 
-Open `http://127.0.0.1:8080` for the local API and historical UI.
+Open `http://127.0.0.1:8080` for the local API and Svelte demo UI.
 
 The full Compose start path opens inbound TAK UDP on `:6970` by default and
 seeds sample CoT events for two operators, one marker, and observed GeoChat:
@@ -175,7 +177,7 @@ Use `./scripts/demo-down.sh` to tear down the stack.
 
 Use two NATS/SemStreams stacks for this first bridge demo:
 
-- SemLink NATS/SemStreams stack: local API, historical UI, raw MAVLink stream,
+- SemLink NATS/SemStreams stack: local API, Svelte demo UI, raw MAVLink stream,
   current-state graph, alerts, commands.
 - SemConnect NATS/SemStreams stack: CS API Systems, Datastreams, Observations,
   SystemEvents, Commands.
@@ -183,8 +185,8 @@ Use two NATS/SemStreams stacks for this first bridge demo:
 
 Do not point SemConnect at SemLink's embedded NATS unless the SemStreams graph
 backend ownership is planned explicitly. SemLink embeds `graph-ingest` for the
-historical demo; SemConnect's read endpoints expect the fuller graph
-backend/index stack.
+demo runtime; SemConnect's read endpoints expect the fuller graph backend/index
+stack.
 
 ## Talk Track
 
@@ -243,7 +245,7 @@ git diff --check
 ```
 
 The heavier fidelity lanes stay operator-invoked because they require Docker,
-SITL, sibling checkouts, or hardware:
+SITL, companion package context, sibling checkouts, or hardware:
 
 ```bash
 scripts/ardurover-sitl-lane.sh

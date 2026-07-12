@@ -5,7 +5,6 @@ SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 SEMLINK_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
 DEMO_ROOT="$(cd "$SEMLINK_ROOT/.." && pwd)"
 SEMCONNECT_ROOT="${SEMCONNECT_ROOT:-$DEMO_ROOT/semconnect}"
-SEMSTREAMS_ROOT="${SEMSTREAMS_ROOT:-$DEMO_ROOT/semstreams}"
 COMPOSE_PROJECT_NAME="${COMPOSE_PROJECT_NAME:-semlink-demo}"
 SEMLINK_HANDOFF_PROFILE_FILE="${SEMLINK_HANDOFF_PROFILE_FILE:-$SEMLINK_ROOT/configs/handoff/companion.env.example}"
 ARDUPILOT_SITL_STANDARD_FILE="${ARDUPILOT_SITL_STANDARD_FILE:-$SEMLINK_ROOT/docker/ardupilot-sitl/standard.env}"
@@ -44,15 +43,8 @@ if [[ ! -d "$SEMCONNECT_ROOT/conformance/.vendor/semstreams" ]]; then
   exit 1
 fi
 
-if [[ ! -f "$SEMSTREAMS_ROOT/go.mod" ]]; then
-  echo "missing SemStreams checkout: $SEMSTREAMS_ROOT" >&2
-  echo "clone semstreams beside semlink, or set SEMSTREAMS_ROOT=/path/to/semstreams" >&2
-  exit 1
-fi
-
 export CS_API_HOST_PORT="${CS_API_HOST_PORT:-48080}"
 export SEMLINK_ROOT
-export SEMSTREAMS_ROOT
 export SEMLINK_HANDOFF_PROFILE_FILE
 export SEMLINK_UI_HOST_PORT="${SEMLINK_UI_HOST_PORT:-8080}"
 export NATS_HOST_PORT="${NATS_HOST_PORT:-14222}"

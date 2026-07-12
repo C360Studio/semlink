@@ -21,8 +21,6 @@ services:
     build:
       context: ${SEMLINK_ROOT:-.}
       dockerfile: Dockerfile
-      additional_contexts:
-        semstreams: ${SEMSTREAMS_ROOT:-../semstreams}
     depends_on:
       semlink-nats:
         condition: service_healthy

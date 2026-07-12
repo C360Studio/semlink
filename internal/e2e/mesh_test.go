@@ -9,14 +9,13 @@ import (
 	"time"
 )
 
-func TestRunSimpleMeshDemoCatchesUpSelectedSummariesAndWritesReport(t *testing.T) {
+func TestRunSimpleMeshDemoCatchesUpOneVehiclePerCompanionAndWritesReport(t *testing.T) {
 	report, err := RunSimpleMeshDemo(context.Background(), SimpleMeshDemoConfig{
-		Nodes:           3,
-		VehiclesPerNode: 1,
-		VehicleProfile:  "ardurover",
-		Start:           time.Date(2026, 7, 9, 17, 0, 0, 0, time.UTC),
-		StepElapsed:     20 * time.Second,
-		MaxDiffItems:    8,
+		Nodes:          3,
+		VehicleProfile: "ardurover",
+		Start:          time.Date(2026, 7, 9, 17, 0, 0, 0, time.UTC),
+		StepElapsed:    20 * time.Second,
+		MaxDiffItems:   8,
 	})
 	if err != nil {
 		t.Fatalf("RunSimpleMeshDemo() error = %v", err)
@@ -31,13 +30,16 @@ func TestRunSimpleMeshDemoCatchesUpSelectedSummariesAndWritesReport(t *testing.T
 		t.Fatalf("nodes = %#v", report.Nodes)
 	}
 	for _, node := range report.Nodes {
+		if node.VehicleCount != 1 {
+			t.Fatalf("node %s vehicle count = %d, want 1", node.NodeID, node.VehicleCount)
+		}
 		if node.PeerCount != 2 {
 			t.Fatalf("node %s peer count = %d, want 2", node.NodeID, node.PeerCount)
 		}
 		if node.InitialSummaryCount != 1 || node.FinalSummaryCount != 3 || node.WatermarkCount != 3 {
 			t.Fatalf("node %s summary counts = %#v", node.NodeID, node)
 		}
-		if node.AppliedDiffCount == 0 || node.DiffItemCount == 0 {
+		if node.AppliedDiffCount != 2 || node.DiffItemCount != 2 {
 			t.Fatalf("node %s diff counts = %#v", node.NodeID, node)
 		}
 		if node.TTLMergePosture == "" {
@@ -65,7 +67,7 @@ func TestRunSimpleMeshDemoCatchesUpSelectedSummariesAndWritesReport(t *testing.T
 	if err := json.Unmarshal(data, &decoded); err != nil {
 		t.Fatalf("decode report: %v", err)
 	}
-	if decoded.Kind != SimpleMeshReportKind || len(decoded.Nodes) != 3 {
+	if decoded.Kind != SimpleMeshReportKind || decoded.ExpectedSummaries != 3 || len(decoded.Nodes) != 3 {
 		t.Fatalf("decoded report = %#v", decoded)
 	}
 }
