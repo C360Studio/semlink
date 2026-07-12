@@ -194,7 +194,7 @@ MAVLink vehicle per companion node.
 - **AND** each node starts with `initial_summary_count=1`
 - **AND** each node reaches `final_summary_count=3` and `watermark_count=3`
 - **AND** each node records bounded diff counts, peer count, TTL merge posture,
-  and assertion status
+  visible origin vehicle references, and assertion status
 - **AND** the proof remains deterministic and does not require SITL, BlueOS,
   Navigator hardware, SemOps, SemConnect, CS API, or GCS glass
 
@@ -205,3 +205,17 @@ MAVLink vehicle per companion node.
   embeds the multi-companion mesh report
 - **AND** the artifact source fidelity is `deterministic`
 - **AND** the artifact generator metadata identifies the node-count proof shape
+
+#### Scenario: Mesh perspective matrix runs in the deterministic e2e lane
+
+- **WHEN** maintainers run the deterministic mesh e2e tests
+- **THEN** SemLink exercises 3-node full mesh, line topology, partition-heal,
+  and late-joiner selected-state scenarios
+- **AND** each companion still owns exactly one simulated MAVLink vehicle
+- **AND** each converged node reports all expected visible origin vehicle
+  references
+- **AND** partial stages report only the origin vehicles actually visible from
+  that node's perspective
+- **AND** the matrix does not require external GCS glass or standards bridge
+  services to be running
+

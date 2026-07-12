@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"net/http/httptest"
+	"sort"
 	"strings"
 	"time"
 
@@ -36,16 +37,22 @@ type SimpleMeshDemoReport struct {
 }
 
 type MeshNodeReport struct {
-	NodeID              string   `json:"node_id"`
-	VehicleCount        int      `json:"vehicle_count"`
-	PeerCount           int      `json:"peer_count"`
-	PeerURLs            []string `json:"peer_urls"`
-	InitialSummaryCount int      `json:"initial_summary_count"`
-	FinalSummaryCount   int      `json:"final_summary_count"`
-	WatermarkCount      int      `json:"watermark_count"`
-	AppliedDiffCount    int      `json:"applied_diff_count"`
-	DiffItemCount       int      `json:"diff_item_count"`
-	TTLMergePosture     string   `json:"ttl_merge_posture"`
+	NodeID                string             `json:"node_id"`
+	VehicleCount          int                `json:"vehicle_count"`
+	PeerCount             int                `json:"peer_count"`
+	PeerURLs              []string           `json:"peer_urls"`
+	InitialSummaryCount   int                `json:"initial_summary_count"`
+	FinalSummaryCount     int                `json:"final_summary_count"`
+	WatermarkCount        int                `json:"watermark_count"`
+	AppliedDiffCount      int                `json:"applied_diff_count"`
+	DiffItemCount         int                `json:"diff_item_count"`
+	TTLMergePosture       string             `json:"ttl_merge_posture"`
+	VisibleOriginVehicles []OriginVehicleRef `json:"visible_origin_vehicles"`
+}
+
+type OriginVehicleRef struct {
+	OriginNodeID    string `json:"origin_node_id"`
+	OriginVehicleID string `json:"origin_vehicle_id"`
 }
 
 type RawMAVLinkExclusionReport struct {
@@ -167,6 +174,26 @@ func closeMeshRuntimes(runtimes []meshRuntime) {
 }
 
 func pullMeshPeers(ctx context.Context, runtimes []meshRuntime, nodeIndex int, opts mesh.DiffOptions) (MeshNodeReport, error) {
+	return pullMeshPeerIndexes(ctx, runtimes, nodeIndex, allPeerIndexes(len(runtimes), nodeIndex), opts)
+}
+
+func allPeerIndexes(runtimeCount, nodeIndex int) []int {
+	if runtimeCount <= 1 {
+		return nil
+	}
+	peerIndexes := make([]int, 0, runtimeCount-1)
+	for peerIndex := 0; peerIndex < runtimeCount; peerIndex++ {
+		if peerIndex != nodeIndex {
+			peerIndexes = append(peerIndexes, peerIndex)
+		}
+	}
+	return peerIndexes
+}
+
+func pullMeshPeerIndexes(ctx context.Context, runtimes []meshRuntime, nodeIndex int, peerIndexes []int, opts mesh.DiffOptions) (MeshNodeReport, error) {
+	if nodeIndex < 0 || nodeIndex >= len(runtimes) {
+		return MeshNodeReport{}, fmt.Errorf("mesh node index %d out of range", nodeIndex)
+	}
 	runtime := runtimes[nodeIndex]
 	report := MeshNodeReport{
 		NodeID:              runtime.node.NodeID,
@@ -174,10 +201,14 @@ func pullMeshPeers(ctx context.Context, runtimes []meshRuntime, nodeIndex int, o
 		InitialSummaryCount: runtime.index.Len(),
 		TTLMergePosture:     "last-writer-wins-with-ttl",
 	}
-	for peerIndex, peer := range runtimes {
-		if peerIndex == nodeIndex {
-			continue
+	for _, peerIndex := range peerIndexes {
+		if peerIndex < 0 || peerIndex >= len(runtimes) {
+			return MeshNodeReport{}, fmt.Errorf("mesh peer index %d out of range", peerIndex)
 		}
+		if peerIndex == nodeIndex {
+			return MeshNodeReport{}, fmt.Errorf("mesh node %d cannot pull from itself", nodeIndex)
+		}
+		peer := runtimes[peerIndex]
 		report.PeerURLs = append(report.PeerURLs, peer.server.URL)
 		result, err := runtime.transport.PullFrom(ctx, peer.server.URL, opts)
 		if err != nil {
@@ -188,8 +219,33 @@ func pullMeshPeers(ctx context.Context, runtimes []meshRuntime, nodeIndex int, o
 	}
 	report.PeerCount = len(report.PeerURLs)
 	report.FinalSummaryCount = runtime.index.Len()
-	report.WatermarkCount = len(runtime.index.Watermarks(opts.Now).Entries)
+	watermarks := runtime.index.Watermarks(opts.Now)
+	report.WatermarkCount = len(watermarks.Entries)
+	report.VisibleOriginVehicles = visibleOriginVehicles(watermarks)
 	return report, nil
+}
+
+func visibleOriginVehicles(watermarks mesh.WatermarkSet) []OriginVehicleRef {
+	seen := make(map[OriginVehicleRef]struct{}, len(watermarks.Entries))
+	refs := make([]OriginVehicleRef, 0, len(watermarks.Entries))
+	for _, entry := range watermarks.Entries {
+		ref := OriginVehicleRef{
+			OriginNodeID:    entry.OriginNodeID,
+			OriginVehicleID: entry.OriginVehicleID,
+		}
+		if _, ok := seen[ref]; ok {
+			continue
+		}
+		seen[ref] = struct{}{}
+		refs = append(refs, ref)
+	}
+	sort.Slice(refs, func(i, j int) bool {
+		if refs[i].OriginNodeID != refs[j].OriginNodeID {
+			return refs[i].OriginNodeID < refs[j].OriginNodeID
+		}
+		return refs[i].OriginVehicleID < refs[j].OriginVehicleID
+	})
+	return refs
 }
 
 func probeRawMAVLinkExclusion(at time.Time) RawMAVLinkExclusionReport {
@@ -240,7 +296,7 @@ func allMeshNodesCaughtUp(nodes []MeshNodeReport, expected int) bool {
 		return false
 	}
 	for _, node := range nodes {
-		if node.FinalSummaryCount != expected || node.WatermarkCount != expected {
+		if node.FinalSummaryCount != expected || node.WatermarkCount != expected || len(node.VisibleOriginVehicles) != expected {
 			return false
 		}
 	}
