@@ -26,14 +26,14 @@ SemLink owns the robotics product layer:
 SemStreams owns the substrate:
 
 - NATS and JetStream transport
-- graph-ingest mutation and query subjects
+- canonical graph mutation and authoritative-read APIs
 - `ENTITY_STATES`
-- projection ownership contracts
+- projection contracts that validate producer intent and graph shape locally
 - indexing profiles for content, control, signal, and trace
 
-SemLink writes current state through SemStreams graph mutation subjects. Raw telemetry is retained in a bounded stream
-lane and summarized into signal-profiled current-state entities. Operator alerts and command intents are written as
-control-profiled graph entities.
+SemLink writes current state through SemStreams' canonical mutation adapter. Raw telemetry is retained in a bounded
+stream lane and summarized into signal-profiled current-state entities. Operator alerts and command intents are
+written as control-profiled graph entities.
 
 SemLink may optionally project a curated standards-facing view into SemConnect.
 That bridge is downstream of SemLink's MAVLink decoder/projector and publishes
@@ -43,9 +43,10 @@ model and does not route raw MAVLink through SemConnect.
 
 The first demo topology keeps SemLink and SemConnect on separate
 NATS/SemStreams stacks and connects them through HTTP. A one-NATS topology is a
-valid later integration mode, but it must assign a single owner for each graph
-processor to avoid duplicate request responders, stream/KV ownership ambiguity,
-and unclear demo semantics.
+valid later integration mode, but it must run a single active instance of each graph
+processor to avoid duplicate request responders, stream/KV lifecycle ambiguity,
+and unclear demo semantics. This processor-topology rule is distinct from
+projection contracts, which do not reserve predicates or authorize writes.
 
 ## Consequences
 

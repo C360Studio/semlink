@@ -212,11 +212,25 @@ func triple(subject, predicate string, object any, source string, timestamp time
 	return graphprojection.Triple(subject, predicate, object, source, timestamp, confidence)
 }
 
-func projectionFromPayload(payload interface {
+func ProjectionFromPayload(payload interface {
 	message.Payload
 	EntityID() string
 	Triples() []message.Triple
 	IndexingProfile() string
 }, msgType message.Type, updatedAt time.Time) Projection {
-	return graphprojection.ProjectionFromPayload(payload, msgType, updatedAt)
+	contract, group := projectionBinding(msgType)
+	return graphprojection.ProjectionFromPayload(payload, msgType, updatedAt, contract, group)
+}
+
+func projectionBinding(msgType message.Type) (string, string) {
+	switch msgType.Key() {
+	case VehicleTelemetryType.Key():
+		return VehicleTelemetryType.String(), VehicleTelemetryGroup
+	case AlertType.Key():
+		return AlertType.String(), AlertGroup
+	case CommandType.Key():
+		return CommandType.String(), CommandGroup
+	default:
+		return msgType.String(), ""
+	}
 }

@@ -11,14 +11,19 @@ import (
 
 func TestContractsValidateAndDeclareProfiles(t *testing.T) {
 	contracts := Contracts()
-	if _, err := projection.Derive(Owner, contracts...); err != nil {
-		t.Fatalf("Derive contracts: %v", err)
+	if err := projection.ValidateContracts(contracts); err != nil {
+		t.Fatalf("ValidateContracts: %v", err)
 	}
 	if contracts[0].IndexingProfile != vocabulary.IndexingProfileSignal {
 		t.Fatalf("vehicle profile = %q", contracts[0].IndexingProfile)
 	}
 	if contracts[1].IndexingProfile != vocabulary.IndexingProfileControl {
 		t.Fatalf("alert profile = %q", contracts[1].IndexingProfile)
+	}
+	for _, contract := range contracts {
+		if len(contract.Groups) != 1 || contract.Groups[0].Name == "" || contract.Groups[0].Mode != projection.ModeReconcile {
+			t.Fatalf("contract %q groups = %#v", contract.Name, contract.Groups)
+		}
 	}
 }
 
@@ -45,6 +50,9 @@ func TestProjectorCollapsesRawMessagesToCurrentVehicleEntity(t *testing.T) {
 		}
 		if projections[0].IndexingProfile != vocabulary.IndexingProfileSignal {
 			t.Fatalf("profile = %q", projections[0].IndexingProfile)
+		}
+		if projections[0].Contract != VehicleTelemetryType.String() || projections[0].Group != VehicleTelemetryGroup {
+			t.Fatalf("binding = %q/%q", projections[0].Contract, projections[0].Group)
 		}
 	}
 

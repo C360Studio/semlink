@@ -43,6 +43,9 @@ type NodeEvidence struct {
 	Runtime            string    `json:"runtime"`
 	NATSURL            string    `json:"nats_url"`
 	SemStreamsEmbedded bool      `json:"semstreams_embedded"`
+	StateSchemaVersion string    `json:"semstreams_state_schema_version"`
+	FreshState         bool      `json:"semstreams_fresh_state"`
+	ReusedState        bool      `json:"semstreams_reused_state"`
 	StartedAt          time.Time `json:"started_at"`
 	UptimeSeconds      float64   `json:"uptime_seconds"`
 	RawFrames          int64     `json:"raw_frames"`
@@ -394,6 +397,9 @@ func nodeEvidence(nodeID string, metrics MetricsView, now time.Time) NodeEvidenc
 		Runtime:            runtime,
 		NATSURL:            metrics.NATSURL,
 		SemStreamsEmbedded: metrics.SemStreamsEmbedded,
+		StateSchemaVersion: metrics.StateSchemaVersion,
+		FreshState:         metrics.FreshState,
+		ReusedState:        metrics.ReusedState,
 		StartedAt:          metrics.StartedAt,
 		UptimeSeconds:      uptime,
 		RawFrames:          metrics.RawFrames,

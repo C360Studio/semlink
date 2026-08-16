@@ -1,12 +1,15 @@
 package projector
 
 import (
-	"github.com/c360studio/semstreams/pkg/ownership"
 	"github.com/c360studio/semstreams/pkg/projection"
 	"github.com/c360studio/semstreams/vocabulary"
 )
 
-const Owner = "semlink.gcs.projector"
+const (
+	VehicleTelemetryGroup = "vehicle-current"
+	AlertGroup            = "alert-current"
+	CommandGroup          = "command-current"
+)
 
 var (
 	VehicleTelemetryType = mustType("mavlink", "vehicle_state", "v1")
@@ -14,10 +17,10 @@ var (
 	CommandType          = mustType("gcs", "command_intent", "v1")
 )
 
-// Contracts declares the graph footprint this product owns when writing into
-// SemStreams. Telemetry current state is signal-profiled; alerts and command
-// intents are control-profiled.
+// Contracts declares the graph shapes this product emits. Contracts validate
+// producer intent; they do not reserve predicates or authorize writes.
 func Contracts() []projection.Contract {
+	RegisterVocabulary()
 	return []projection.Contract{
 		{
 			Name:            VehicleTelemetryType.String(),
@@ -25,7 +28,8 @@ func Contracts() []projection.Contract {
 			EntityPattern:   "c360.semlink.robotics.fleet.drone.*",
 			IndexingProfile: vocabulary.IndexingProfileSignal,
 			Groups: []projection.PredicateGroup{{
-				Mode: ownership.ModeReplaceOwned,
+				Name: VehicleTelemetryGroup,
+				Mode: projection.ModeReconcile,
 				Predicates: []string{
 					PredicateVehicleCallsign,
 					PredicateVehicleSystemID,
@@ -53,7 +57,8 @@ func Contracts() []projection.Contract {
 			EntityPattern:   "c360.semlink.robotics.fleet.alert.*",
 			IndexingProfile: vocabulary.IndexingProfileControl,
 			Groups: []projection.PredicateGroup{{
-				Mode: ownership.ModeReplaceOwned,
+				Name: AlertGroup,
+				Mode: projection.ModeReconcile,
 				Predicates: []string{
 					PredicateAlertKind,
 					PredicateAlertSeverity,
@@ -70,7 +75,8 @@ func Contracts() []projection.Contract {
 			EntityPattern:   "c360.semlink.robotics.fleet.command.*",
 			IndexingProfile: vocabulary.IndexingProfileControl,
 			Groups: []projection.PredicateGroup{{
-				Mode: ownership.ModeReplaceOwned,
+				Name: CommandGroup,
+				Mode: projection.ModeReconcile,
 				Predicates: []string{
 					PredicateCommandTarget,
 					PredicateCommandVerb,
@@ -79,5 +85,23 @@ func Contracts() []projection.Contract {
 				},
 			}},
 		},
+	}
+}
+
+// RegisterVocabulary declares all SemLink projector predicates before
+// contract validation or mutation-client construction.
+func RegisterVocabulary() {
+	for _, predicate := range []string{
+		PredicateVehicleCallsign, PredicateVehicleSystemID, PredicateVehicleType,
+		PredicateFlightArmed, PredicateFlightMode, PredicateFlightStatus,
+		PredicateLinkStatus, PredicateLinkLastSeenUnixMS, PredicateTelemetrySequence,
+		PredicateTelemetrySampleUnixMS, PredicateBatteryRemainingPct, PredicateBatteryVoltageMV,
+		PredicatePositionLatitudeDeg, PredicatePositionLongitudeDeg, PredicatePositionAltitudeM,
+		PredicatePositionGroundSpeedMS, PredicatePositionHeadingDeg, PredicateAlertKind,
+		PredicateAlertSeverity, PredicateAlertActive, PredicateAlertSubject, PredicateAlertMessage,
+		PredicateAlertRaisedUnixMS, PredicateCommandTarget, PredicateCommandVerb,
+		PredicateCommandStatus, PredicateCommandRequestedUnixMS,
+	} {
+		vocabulary.RegisterPredicate(vocabulary.PredicateMetadata{Name: predicate})
 	}
 }

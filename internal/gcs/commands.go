@@ -9,7 +9,6 @@ import (
 
 	"github.com/c360studio/semlink/internal/projector"
 	semruntime "github.com/c360studio/semlink/internal/semstreams"
-	"github.com/c360studio/semstreams/graph"
 )
 
 type CommandService struct {
@@ -38,15 +37,7 @@ func (s *CommandService) Submit(ctx context.Context, targetEntity, verb string) 
 		Status:       "requested",
 		RequestedAt:  now,
 	}
-	proj := projector.Projection{
-		Entity: &graph.EntityState{
-			ID:          payload.ID,
-			MessageType: projector.CommandType,
-			UpdatedAt:   now,
-		},
-		Triples:         payload.Triples(),
-		IndexingProfile: payload.IndexingProfile(),
-	}
+	proj := projector.ProjectionFromPayload(&payload, projector.CommandType, now)
 	start := time.Now()
 	result, err := s.graph.UpsertProjection(ctx, proj)
 	if err != nil {

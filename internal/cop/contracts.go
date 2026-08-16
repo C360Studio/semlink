@@ -1,14 +1,18 @@
 package cop
 
 import (
-	"github.com/c360studio/semstreams/pkg/ownership"
 	"github.com/c360studio/semstreams/pkg/projection"
 	"github.com/c360studio/semstreams/vocabulary"
 )
 
-const Owner = "semlink.cop.projector"
+const (
+	OperatorGroup = "operator-current"
+	MarkerGroup   = "marker-current"
+	MessageGroup  = "message-current"
+)
 
 func Contracts() []projection.Contract {
+	RegisterVocabulary()
 	return []projection.Contract{
 		{
 			Name:            OperatorType.String(),
@@ -16,7 +20,8 @@ func Contracts() []projection.Contract {
 			EntityPattern:   "c360.semlink.cop.operator.position.*",
 			IndexingProfile: vocabulary.IndexingProfileSignal,
 			Groups: []projection.PredicateGroup{{
-				Mode: ownership.ModeReplaceOwned,
+				Name: OperatorGroup,
+				Mode: projection.ModeReconcile,
 				Predicates: []string{
 					PredicateCOTUID,
 					PredicateKind,
@@ -36,7 +41,8 @@ func Contracts() []projection.Contract {
 			EntityPattern:   "c360.semlink.cop.marker.poi.*",
 			IndexingProfile: vocabulary.IndexingProfileContent,
 			Groups: []projection.PredicateGroup{{
-				Mode: ownership.ModeReplaceOwned,
+				Name: MarkerGroup,
+				Mode: projection.ModeReconcile,
 				Predicates: []string{
 					PredicateCOTUID,
 					PredicateKind,
@@ -55,7 +61,8 @@ func Contracts() []projection.Contract {
 			EntityPattern:   "c360.semlink.cop.message.geochat.*",
 			IndexingProfile: vocabulary.IndexingProfileContent,
 			Groups: []projection.PredicateGroup{{
-				Mode: ownership.ModeReplaceOwned,
+				Name: MessageGroup,
+				Mode: projection.ModeReconcile,
 				Predicates: []string{
 					PredicateCOTUID,
 					PredicateKind,
@@ -70,5 +77,17 @@ func Contracts() []projection.Contract {
 				},
 			}},
 		},
+	}
+}
+
+func RegisterVocabulary() {
+	for _, predicate := range []string{
+		PredicateCOTUID, PredicateKind, PredicateCallsign, PredicateLabel,
+		PredicateDescription, PredicateMessageText, PredicateMessageSenderUID,
+		PredicateMessageSenderEntity, PredicateLastSeenUnixMS,
+		PredicatePositionLatitudeDeg, PredicatePositionLongitudeDeg,
+		PredicatePositionAltitudeM, PredicatePositionHeadingDeg, PredicatePositionSpeedMS,
+	} {
+		vocabulary.RegisterPredicate(vocabulary.PredicateMetadata{Name: predicate})
 	}
 }

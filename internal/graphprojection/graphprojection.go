@@ -12,6 +12,8 @@ type Projection struct {
 	Entity          *graph.EntityState
 	Triples         []message.Triple
 	IndexingProfile string
+	Contract        string
+	Group           string
 }
 
 // Payload is the source-neutral payload contract needed to project an entity.
@@ -33,7 +35,7 @@ func Triple(subject, predicate string, object any, source string, timestamp time
 	}
 }
 
-func ProjectionFromPayload(payload Payload, msgType message.Type, updatedAt time.Time) Projection {
+func ProjectionFromPayload(payload Payload, msgType message.Type, updatedAt time.Time, contract, group string) Projection {
 	return Projection{
 		Entity: &graph.EntityState{
 			ID:          payload.EntityID(),
@@ -42,5 +44,7 @@ func ProjectionFromPayload(payload Payload, msgType message.Type, updatedAt time
 		},
 		Triples:         payload.Triples(),
 		IndexingProfile: payload.IndexingProfile(),
+		Contract:        contract,
+		Group:           group,
 	}
 }

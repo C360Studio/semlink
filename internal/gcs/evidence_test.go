@@ -17,6 +17,7 @@ import (
 func TestHandleEvidenceReturnsExternalConsumerContract(t *testing.T) {
 	now := time.Now().UTC().Truncate(time.Second)
 	store := NewStore("nats://demo", true)
+	store.SetSemStreamsStatePosture("beta.160", true, false)
 	vehicle := projector.VehicleStatePayload{
 		ID:               "c360.semlink.robotics.fleet.drone.uav-003",
 		Callsign:         "BOAT-003",
@@ -159,6 +160,9 @@ func TestHandleEvidenceReturnsExternalConsumerContract(t *testing.T) {
 	if body.Node.NodeID != "boat-alpha" || body.Node.Runtime != "embedded-semstreams" {
 		t.Fatalf("node = %#v", body.Node)
 	}
+	if body.Node.StateSchemaVersion != "beta.160" || !body.Node.FreshState || body.Node.ReusedState {
+		t.Fatalf("SemStreams state posture = %#v", body.Node)
+	}
 	if body.Profile.Status != "configured" ||
 		body.Profile.NodeID != "boat-alpha" ||
 		body.Profile.VehicleID != vehicle.ID ||
@@ -236,6 +240,20 @@ func TestHandleEvidenceReturnsExternalConsumerContract(t *testing.T) {
 	}
 	if body.Commands[1].Gate == nil || body.Commands[1].Gate.HardwareBlock == nil {
 		t.Fatalf("command gate evidence missing hardware block: %#v", body.Commands)
+	}
+}
+
+func TestSemStreamsStateEvidenceDistinguishesFirstInitializationFromReuse(t *testing.T) {
+	store := NewStore("nats://demo", false)
+	store.SetSemStreamsStatePosture("beta.160", false, true)
+	metrics := store.Snapshot().Metrics
+	if metrics.StateSchemaVersion != "beta.160" || metrics.FreshState || !metrics.ReusedState {
+		t.Fatalf("reused state posture = %#v", metrics)
+	}
+	store.SetSemStreamsStatePosture("beta.160", true, false)
+	metrics = store.Snapshot().Metrics
+	if metrics.StateSchemaVersion != "beta.160" || !metrics.FreshState || metrics.ReusedState {
+		t.Fatalf("first initialization posture = %#v", metrics)
 	}
 }
 

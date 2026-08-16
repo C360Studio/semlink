@@ -19,6 +19,7 @@ exec /app/semgcs-demo \
   "-listen=${SEMLINK_HTTP_LISTEN:-:80}" \
   "-static=${SEMLINK_STATIC_DIR:-}" \
   "-embedded-nats=${SEMLINK_EMBEDDED_NATS:-true}" \
+  "-state-dir=${SEMLINK_NATS_STATE_DIR:-/data/nats-beta160}" \
   "-nats-url=${NATS_URL:-nats://127.0.0.1:4222}" \
   "-vehicles=${SEMLINK_VEHICLES:-1}" \
   "-hz=${SEMLINK_HZ:-5}" \

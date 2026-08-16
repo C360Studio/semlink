@@ -8,13 +8,18 @@
       "subjects": ["mavlink.raw.>"],
       "storage": "memory",
       "max_age": "5m",
+      "max_bytes": 134217728,
       "max_msgs": 250000,
-      "max_msgs_per_subject": 5000
+      "max_msgs_per_subject": 5000,
+      "discard": "old"
     },
     {
       "name": "ENTITY",
       "subjects": ["entity.>"],
-      "storage": "memory"
+      "storage": "memory",
+      "max_age": "24h",
+      "max_bytes": 67108864,
+      "discard": "old"
     }
   ],
   "components": {
@@ -38,10 +43,10 @@
       "config": {
         "raw_stream": "MAVLINK_RAW",
         "state_mutation_subjects": [
-          "graph.mutation.entity.create_with_triples",
-          "graph.mutation.entity.update_with_triples"
+          "graph.mutation.entity.create",
+          "graph.mutation.entity.reconcile"
         ],
-        "query_subject": "graph.ingest.query.entity",
+        "authority_read_adapter": "projection.MutationClient.ReadAuthoritative",
         "contracts": [
           {"entity_pattern": "c360.semlink.robotics.fleet.drone.*", "indexing_profile": "signal"},
           {"entity_pattern": "c360.semlink.robotics.fleet.alert.*", "indexing_profile": "control"},

@@ -21,8 +21,9 @@ SemGCS demo boundary.
   CLI/config shape, local status/evidence APIs, command vocabulary, and the
   robotics semantic predicates.
 - **SemStreams owns** the substrate: NATS/JetStream, the `graph-ingest` processor,
-  `ENTITY_STATES`, mutation/query subjects, projection-ownership contracts, and indexing
-  profiles. SemLink only *writes through* it.
+  `ENTITY_STATES`, canonical mutation and authoritative-read APIs, projection contracts,
+  and indexing profiles. Contracts validate producer intent and shape; they do not reserve
+  predicates or authorize writes. SemLink only *writes through* the substrate.
 - **SemOps** owns the kitchen-sink COP / fusion product surface and GCS glass.
 - **semstreams-ui** can consume SemLink evidence for generic ops/debug views.
 - **SemConnect** (optional, downstream) receives a curated, decimated OGC Connected
@@ -30,8 +31,10 @@ SemGCS demo boundary.
 
 ## Dependencies
 
-SemLink consumes the tagged SemStreams module declared in `go.mod`; keep normal
-development on that pinned module version. The optional SemConnect / CS API
+SemLink consumes SemStreams `v1.0.0-beta.160` at tag commit
+`8403a2218000e45a31c5132fbfe01af42ed04f14`; keep normal development on that
+pin and follow `docs/semstreams-beta160-migration.md` for state or predicate
+cutovers. The optional SemConnect / CS API
 bridge demo needs a sibling `../semconnect` checkout. Override that location
 with `SEMCONNECT_ROOT`.
 
@@ -55,7 +58,7 @@ npm --prefix ui run check
 npm --prefix ui run dev   # Vite at :5173
 
 # Full two-stack demo via Docker Compose (needs ../semconnect and Docker)
-./scripts/demo-up.sh      # SemLink local API / Svelte UI :8080, SemConnect CS API :48080
+./scripts/demo-up.sh      # preserves beta.160 NATS state during normal deployment
 ./scripts/demo-down.sh
 
 # OpenSpec governance for product-boundary or contract-sized changes
@@ -63,7 +66,7 @@ openspec validate --all --strict
 openspec validate pivot-companion-mesh --strict
 ```
 
-The Go unit tests use in-memory fakes (e.g. `fakeRequester` in
+The Go unit tests use in-memory fakes (e.g. `fakeMutationClient` in
 `internal/semstreams/client_test.go`); there is no testcontainers/Docker requirement for
 `go test`.
 
@@ -75,16 +78,18 @@ mavlink.Simulator (sim.go)            internal/gcs/demo.go owns the goroutines:
   -> circular buffer (bounded)          runProjector   -> drain batch, decode, project, write
   -> internal/mavlink.DecodeMessage     runLinkMonitor -> derive lost-link from silence
   -> internal/projector.Apply           +  publish raw bytes to MAVLINK_RAW JetStream lane
-  -> projector.Projection (entity+triples+profile)
+  -> projector.Projection (entity+triples+profile+contract+group)
   -> semstreams.GraphClient.UpsertProjection
-       -> graph.ingest mutation subjects (create_with_triples / update_with_triples)
+       -> projection.MutationClient named-group reconcile
+       -> zero-triple strict create only for a proven-absent entity
+       -> authoritative exact read + same-entry KV revision
   -> gcs.Store (in-memory snapshot)  -> HTTP /api/snapshot + /api/events (SSE)
                                       -> Svelte demo UI / external consumers
   -> (optional) csapi.Bridge          -> decimated CS API POSTs to SemConnect
 ```
 
 **Key modeling decision:** raw frames are *not* one graph entity per frame. High-rate
-frames live on a bounded JetStream lane (`MAVLINK_RAW`, memory storage, 5-min/250k cap);
+frames live on a bounded JetStream lane (`MAVLINK_RAW`, file storage, 5-min/250k cap);
 current vehicle state is collapsed into **one signal-profiled graph entity per vehicle**;
 alerts and command intents are **control-profiled** graph entities. This signal-vs-control
 split is the whole point of the demo — preserve it.
@@ -100,13 +105,17 @@ split is the whole point of the demo — preserve it.
   MAVSDK.
 - **`internal/projector`** — collapses decoded messages into per-vehicle current state and
   emits `Projection`s. This is where the **semantic vocabulary lives**: `predicates.go`
-  (`robot.*` predicate IRIs + source constants), `contracts.go` (ownership contracts +
+  (`robot.*` predicate IRIs + source constants), `contracts.go` (named reconcile groups +
   indexing profiles), `types.go` (payload → triples). `Apply` updates state and raises
   low-battery alerts; `CheckLinkTimeouts` derives lost-link alerts from silence.
 - **`internal/semstreams`** — substrate bootstrap and client. `runtime.go` starts embedded
-  NATS (ephemeral port `-1`), ensures KV buckets + streams, and starts the `graph-ingest`
-  processor in-process. `client.go`'s `GraphClient.UpsertProjection` does create→update
-  fallback over request/reply, caching known entity IDs.
+  NATS (ephemeral port `-1`), validates all contracts, ensures bounded consumer streams,
+  and starts the `graph-ingest` processor in-process. `client.go` reconciles first, creates
+  a zero-triple envelope for proven absence, resolves typed outcomes, and uses authoritative
+  exact reads. Graph-ingest owns `ENTITY_SUFFIX_INDEX`; `COMPONENT_STATUS` is removed.
+  Startup CAS-stamps an empty namespace at
+  `SEMLINK_RUNTIME_META/state-schema-version=beta.160`, then later exact-version starts
+  validate and reopen durable state. Missing or different stamps fail closed unchanged.
 - **`internal/gcs`** — demo orchestration plus local
   status/evidence API. `demo.go` (the 3 goroutines above), `store.go`
   (thread-safe in-memory snapshot + metrics), `server.go` (HTTP:
@@ -128,19 +137,25 @@ split is the whole point of the demo — preserve it.
 
 - **OpenSpec:** large product-boundary changes, mesh protocol changes, command-transmit
   changes, and SemStreams contract migrations should start under `openspec/changes/`.
-  The active forward pivot is `openspec/changes/pivot-companion-mesh/`.
+  The active substrate migration is `openspec/changes/migrate-semstreams-beta-160/`.
 - **Entity IDs** are dotted, hierarchical, and parsed by convention:
   `c360.semlink.robotics.fleet.drone.uav-NNN`, `...fleet.alert.<kind>-uav-NNN`,
   `...fleet.command.<verb>-uav-NNN-<unixmilli>`. `systemIDFromEntity` extracts the `uav-NNN`
   number, so keep the `uav-NNN` token intact when adding ID forms.
 - **Indexing profiles** are deliberate: telemetry current state = `signal`, alerts/commands
   = `control`. Declare any new graph footprint in `projector.Contracts()` and register its
-  payload in `RegisterPayloads` — both are validated by `projection.Derive` in tests.
+  vocabulary and payload before startup. The complete contract set is validated with
+  `projection.ValidateContracts`; every current group has a stable name and
+  `projection.ModeReconcile`.
 - **The simulator is scripted for the demo narrative**: the last vehicle periodically drops
   all frames (exercises lost-link detection via `runLinkMonitor`), and vehicle 1's battery
   is forced low after ~18s (exercises the low-battery alert). Don't "fix" these as bugs.
 - **`go.mod` targets Go 1.26.3.** Embedded NATS binds an ephemeral port and writes to a temp
-  `StoreDir` that is cleaned up on `Runtime.Stop`.
+  `StateDir` only when the caller omits the setting for explicit development/tests.
+  Packaged and BlueOS profiles use `SEMLINK_NATS_STATE_DIR=/data/nats-beta160`; configured
+  state is never deleted by `Stop`. Compose uses the persistent
+  `semlink-nats-beta160-data` volume. Empty state is required only for first beta.160
+  initialization; there is no alpha/beta transform, copy, adoption, upgrade, or downgrade.
 - **Dependency posture:** prefer hand-rolled, scoped implementations over libraries unless a dep is mature and
   scope-aligned. Precedent: ADR 001 (no MAVSDK; hand-wrote the MAVLink subset) and
   `docs/adr/002-tak-cot-bridge.md` (hand-roll the CoT codec; `cotlib` is optional reference only; `kdudkov/goatak`

@@ -24,6 +24,7 @@ func main() {
 		listen         = flag.String("listen", ":8080", "HTTP listen address")
 		natsURL        = flag.String("nats-url", getenv("NATS_URL", "nats://127.0.0.1:4222"), "NATS URL used when -embedded-nats=false")
 		embeddedNATS   = flag.Bool("embedded-nats", true, "start a local NATS JetStream container for the demo")
+		stateDir       = flag.String("state-dir", getenv("SEMLINK_NATS_STATE_DIR", ""), "persistent embedded NATS state directory; empty uses an owned development temporary directory")
 		vehicles       = flag.Int("vehicles", 12, "number of simulated vehicles")
 		hz             = flag.Int("hz", 20, "simulator ticks per second")
 		bufferCapacity = flag.Int("buffer", 10000, "raw telemetry buffer capacity")
@@ -70,6 +71,7 @@ func main() {
 	rt, err := semruntime.StartRuntime(ctx, semruntime.RuntimeOptions{
 		NATSURL:  *natsURL,
 		Embedded: *embeddedNATS,
+		StateDir: *stateDir,
 		Logger:   logger,
 	})
 	if err != nil {
@@ -85,6 +87,7 @@ func main() {
 	}()
 
 	store := gcs.NewStore(rt.NATSURL, *embeddedNATS)
+	store.SetSemStreamsStatePosture(rt.StateSchemaVersion, rt.FreshState, rt.ReusedState)
 	if *csapiURL != "" {
 		bridge, err := csbridge.NewBridge(csbridge.Config{
 			BaseURL:             *csapiURL,

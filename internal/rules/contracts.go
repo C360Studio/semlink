@@ -1,21 +1,22 @@
 package rules
 
 import (
-	"github.com/c360studio/semstreams/pkg/ownership"
 	"github.com/c360studio/semstreams/pkg/projection"
 	"github.com/c360studio/semstreams/vocabulary"
 )
 
-const Owner = "semlink.rules.engine"
+const TraceGroup = "trace-current"
 
 func Contracts() []projection.Contract {
+	RegisterVocabulary()
 	return []projection.Contract{{
 		Name:            TraceType.String(),
 		MessageType:     TraceType.String(),
 		EntityPattern:   "c360.semlink.robotics.fleet.rule.*",
 		IndexingProfile: vocabulary.IndexingProfileTrace,
 		Groups: []projection.PredicateGroup{{
-			Mode: ownership.ModeReplaceOwned,
+			Name: TraceGroup,
+			Mode: projection.ModeReconcile,
 			Predicates: []string{
 				PredicateTraceRuleID,
 				PredicateTraceRuleVersion,
@@ -32,4 +33,16 @@ func Contracts() []projection.Contract {
 			},
 		}},
 	}}
+}
+
+func RegisterVocabulary() {
+	for _, predicate := range []string{
+		PredicateTraceRuleID, PredicateTraceRuleVersion, PredicateTraceNode,
+		PredicateTraceVehicle, PredicateTraceTarget, PredicateTraceDecision,
+		PredicateTraceSuggestedAction, PredicateTraceExecutionPosture,
+		PredicateTraceInputCount, PredicateTraceInputHash, PredicateTraceInputFactsJSON,
+		PredicateTraceFiredUnixMS,
+	} {
+		vocabulary.RegisterPredicate(vocabulary.PredicateMetadata{Name: predicate})
+	}
 }

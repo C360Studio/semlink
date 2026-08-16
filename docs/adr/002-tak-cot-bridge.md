@@ -99,13 +99,12 @@ Because a CoT event is a self-contained snapshot keyed by string `uid` (identity
 rather than fragments to accumulate, the `cop` translator is a thin `uid`-keyed mapper plus a last-seen / stale tracker —
 much lighter than `projector`'s `vehicleAccumulator`. The MAVLink accumulator is untouched.
 
-### `cop` ownership, contracts, and registration
+### `cop` contracts and registration
 
-`internal/cop` mirrors `internal/projector`'s graph-footprint surface, not just its payloads: it declares `cop.Owner`,
-`cop.Contracts()` (the ownership / indexing-profile contracts for its entity patterns), and `cop.RegisterPayloads`. The
-runtime must register it alongside the existing call — `internal/semstreams/runtime.go` currently invokes only
-`projector.RegisterPayloads(reg)`; Phase 1 adds `cop.RegisterPayloads(reg)` so the graph-ingest payload registry knows
-the `cop.*` types.
+`internal/cop` mirrors `internal/projector`'s graph-footprint surface, not just its payloads. It declares
+`cop.Contracts()` with stable named reconcile groups and indexing profiles, registers its canonical vocabulary, and
+implements `cop.RegisterPayloads`. Beta.160 removed semantic ownership from projection contracts. The runtime
+registers COP vocabulary and payloads before validating the complete contract set and starting graph-ingest.
 
 Indexing profiles are explicit per kind, following the SemStreams profile semantics — `signal` is telemetry / readings,
 `content` is the retrieval corpus for prose-bearing / domain context, and `control` is durable, low-cardinality
@@ -133,8 +132,8 @@ Two cases, decided differently:
   uses a collision-safe encoding of the raw UID — base32url (no padding), or a human-readable slug with a hash suffix for
   legibility — never bare `safeToken`; the current six-part shapes are `c360.semlink.cop.operator.position.<uid-token>`,
   `c360.semlink.cop.marker.poi.<uid-token>`, and `c360.semlink.cop.message.geochat.<uid-token>`. The raw CoT UID is always
-  preserved as a predicate (`cop.identity.cot_uid`) for audit and debugging. `safeToken` may still be used for display
-  labels, never for identity.
+  preserved as a predicate (`cop.identity.cot-uid`) for audit and debugging. `safeToken` may still be used for display
+  labels, never for identity. The canonical audit predicate is `cop.identity.cot-uid`.
 - **Cross-source UAV reconciliation** (a TAK client reporting a UAV that MAVLink also produces as `uav-NNN`) is a durable
   equivalence / identity-resolution problem (a sameAs policy) and is **out of scope for the demo**. In the demo, TAK is a
   *consumer* of UAV tracks (outbound), never a second *producer*; inbound TAK only creates `cop.*` entities, which never
@@ -185,10 +184,10 @@ standards-consumer path.
 - **Phase 0 — outbound (decided first).** `internal/cot` encode + `internal/tak` transport, reading the existing store.
   Acceptance: ATAK shows the swarm over multicast, then TCP. Needs no domain or projection extraction.
 - **Phase 1 — inbound + egress.** Extract `internal/graphprojection` (prerequisite); add the `internal/cop` projection
-  path with `cop.Owner` / `cop.Contracts()` / `cop.RegisterPayloads`, and register it in
-  `internal/semstreams/runtime.go` alongside `projector.RegisterPayloads`; ingest `cop.*` into the SKG; extend
+  path with `cop.Contracts()` / `cop.RegisterPayloads`, and register it in
+  `internal/semstreams/runtime.go` alongside projector payloads; ingest `cop.*` into the SKG; extend
   `gcs.Store` + `internal/csapi` for `cop.*` egress; verify SemConnect resource support first. Identity is
-  collision-safe deterministic `cop.*` IDs (raw UID kept as `cop.identity.cot_uid`); cross-source UAV reconciliation and
+  collision-safe deterministic `cop.*` IDs (raw UID kept as `cop.identity.cot-uid`); cross-source UAV reconciliation and
   tasking stay out of scope.
 - **Phase 2 (optional).** protobuf v1 negotiation (generated from the public `.proto`), then TLS / enrollment via
   step-ca.
@@ -202,8 +201,8 @@ local evidence APIs, SemStreams owns the substrate, SemConnect owns the standard
 glass. TAK becomes just another adapter family.
 
 Phase 1 carries named, non-optional prerequisites that earlier drafts understated: the `graphprojection` extraction
-(because the reusable helpers are unexported and MAVLink-entangled today), `cop` ownership/contracts/profiles plus
-registering `cop.RegisterPayloads` in the runtime (the registry knows only `projector`'s payloads today), explicit
+(because the reusable helpers are unexported and MAVLink-entangled today), COP contracts/profiles plus
+registering `cop.RegisterPayloads` in the runtime, explicit
 `gcs.Store` and `internal/csapi` extensions for `cop.*` egress (because the bridge syncs only `Vehicles` / `Alerts` /
 `Commands` from the in-memory store), and a SemConnect resource-support check. Scoping cross-source UAV reconciliation
 and tasking out of the demo is what keeps Phase 1 tractable; durable identity resolution and the tasking round-trip,

@@ -258,7 +258,7 @@ func (p *TracePayload) Projection() (graphprojection.Projection, error) {
 	if err := p.Validate(); err != nil {
 		return graphprojection.Projection{}, err
 	}
-	return graphprojection.ProjectionFromPayload(p, TraceType, p.FiredAt), nil
+	return graphprojection.ProjectionFromPayload(p, TraceType, p.FiredAt, TraceType.String(), TraceGroup), nil
 }
 
 func HashInput(input EvaluationInput) (string, error) {

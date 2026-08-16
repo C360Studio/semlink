@@ -5,6 +5,12 @@ the deployable SemLink companion package. It documents the values needed to run
 one vehicle-local node with local evidence APIs, optional UDP MAVLink input,
 optional mesh peers, and optional downstream consumers.
 
+The profile keeps SemLink BlueOS-compatible without making BlueOS mandatory.
+BlueOS can host the package for Navigator/Pi deployments, but the same profile
+shape applies to native Linux, SITL/UDP, and companion-Pi deployments. BlueOS
+registration is deployment metadata; local evidence and native MAVLink input are
+the compatibility proof.
+
 Use the copyable profile at:
 
 ```bash
@@ -48,10 +54,25 @@ The readiness endpoints for the handoff are:
 | Field | Status | Purpose |
 | --- | --- | --- |
 | `SEMLINK_EMBEDDED_NATS` | wired in BlueOS entrypoint | Runs embedded local SemStreams runtime when true. |
+| `SEMLINK_NATS_STATE_DIR` | wired | Persistent `StateDir`; defaults to `/data/nats-beta160`. |
 | `NATS_URL` | wired in binary and entrypoint | External NATS URL when embedded runtime is false. |
 
 The first handoff profile defaults to local embedded runtime so a single node
-can be smoked without external infrastructure.
+can be smoked without external infrastructure. The configured state directory
+persists across graceful and unexpected process restarts and is never deleted
+by `Stop`. An empty value selects an owned temporary store only for explicit
+development or tests.
+
+First beta.160 initialization requires an empty managed namespace and stamps
+`SEMLINK_RUNTIME_META/state-schema-version=beta.160`. Later starts validate the
+exact stamp and reopen state. A missing or different stamp, or divergent owned
+configuration, fails closed without changing data and directs the operator to
+the documented reset procedure.
+
+Use [`semstreams-beta160-migration.md`](semstreams-beta160-migration.md) for
+the complete managed-resource list, predicate rename map, evidence semantics,
+and narrowly targeted clear/reset procedures. No alpha or beta release
+transforms, copies, adopts, upgrades, or downgrades stored data.
 
 ### MAVLink Input
 
@@ -230,7 +251,11 @@ For an external MAVLink proof, the evidence should show
 `profile.mavlink.external_input_configured=true`,
 `profile.simulator.enabled=false`,
 `profile.simulator.source=external-mavlink-udp`, increasing frame counters, and
-at least one MAVLink-derived vehicle with a `vehicle_type`.
+at least one MAVLink-derived vehicle with a `vehicle_type`. The node section
+must also show `semstreams_state_schema_version=beta.160`. First initialization
+reports `semstreams_fresh_state=true`; a restart reports
+`semstreams_reused_state=true`. Those booleans are mutually exclusive and are
+derived from the durable stamp, not caller input.
 
 ## Boundary
 
@@ -238,4 +263,5 @@ This profile is a handoff contract, not a hardware-control authorization. It
 keeps SemLink focused on local companion APIs, configuration, and evidence.
 SemOps owns COP/GCS glass, semstreams-ui can inspect generic ops/debug state,
 and SemConnect remains optional standards egress. Package readiness is proven
-by SemLink local APIs and evidence, not by starting any downstream consumer.
+by SemLink local APIs and evidence, not by starting BlueOS-specific services or
+any downstream consumer.

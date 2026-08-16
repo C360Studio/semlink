@@ -12,6 +12,9 @@ command posture.
 SemLink SHALL provide a deployable companion package that can be built and run
 as a BlueOS-style Docker service.
 
+SemLink SHALL treat BlueOS as an optional vehicle appliance deployment layer,
+not as the required runtime architecture for companion behavior.
+
 #### Scenario: Package readiness smoke passes
 
 - **WHEN** the companion package is launched through the handoff smoke

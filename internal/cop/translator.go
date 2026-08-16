@@ -128,9 +128,23 @@ func messagePayload(event cot.Event, seen time.Time) (*MessagePayload, error) {
 }
 
 func resultFromPayload(payload graphprojection.Payload, msgType semType, updatedAt time.Time) ProjectionResult {
+	contract, group := projectionBinding(msgType)
 	return ProjectionResult{
-		Projection: graphprojection.ProjectionFromPayload(payload, msgType, updatedAt),
+		Projection: graphprojection.ProjectionFromPayload(payload, msgType, updatedAt, contract, group),
 		View:       ViewFromPayload(payload),
+	}
+}
+
+func projectionBinding(msgType semType) (string, string) {
+	switch msgType.Key() {
+	case OperatorType.Key():
+		return OperatorType.String(), OperatorGroup
+	case MarkerType.Key():
+		return MarkerType.String(), MarkerGroup
+	case MessageType.Key():
+		return MessageType.String(), MessageGroup
+	default:
+		return msgType.String(), ""
 	}
 }
 

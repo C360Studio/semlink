@@ -26,9 +26,10 @@ context: |
     incident-scale dashboards, scenario orchestration, and multi-source
     operational workflows.
   - SemStreams owns the governed graph substrate: NATS/JetStream, graph
-    mutation/query APIs, ENTITY_STATES, projection contracts, ownership claims,
+    mutation and authoritative-read APIs, ENTITY_STATES, projection contracts,
     indexing profiles, lifecycle primitives, local CAS, and reusable framework
-    utilities.
+    utilities. Projection contracts validate local producer intent and shape;
+    they do not reserve predicates or authorize writes.
   - SemConnect owns OGC API - Connected Systems bridge behavior and conformance
     claims. SemLink may publish a curated, low-rate standards view, but CS API
     is not the internal swarm protocol.
@@ -39,8 +40,13 @@ context: |
     mesh by default.
   - Graph writes represent current state, alerts, command intent, rule traces,
     provenance, and confidence rather than one graph entity per raw frame.
-  - Every graph writer declares SemStreams projection and ownership contracts
-    before integration.
+  - Every graph writer registers canonical vocabulary and declares stable named
+    projection groups with explicit reconcile or append mode before integration.
+  - First initialization of an alpha/beta state schema requires an empty managed
+    NATS namespace and an exact durable schema stamp; same-schema restarts reopen
+    validated state, while any other schema fails closed without data changes.
+  - Alpha/beta releases never transform, copy, adopt, upgrade, or downgrade
+    stored data. Reset is an explicit, narrowly targeted operator action.
   - SemStreams KVRevision, EntityState.Version, and timestamps are local
     substrate metadata, not distributed mesh causality metadata.
   - Mesh replication uses explicit origin, sequence or hybrid logical time,

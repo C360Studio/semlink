@@ -122,6 +122,7 @@ func TestBlueOSEntrypointLoadsMountedHandoffProfile(t *testing.T) {
 		"/data/companion.env",
 		". \"$profile_path\"",
 		"missing SemLink handoff profile",
+		"-state-dir=${SEMLINK_NATS_STATE_DIR:-/data/nats-beta160}",
 		"-static=${SEMLINK_STATIC_DIR:-}",
 	)
 	if strings.Contains(entrypoint, "/app/ui/dist") {

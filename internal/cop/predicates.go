@@ -1,20 +1,20 @@
 package cop
 
 const (
-	PredicateCOTUID               = "cop.identity.cot_uid"
-	PredicateKind                 = "cop.kind"
+	PredicateCOTUID               = "cop.identity.cot-uid"
+	PredicateKind                 = "cop.identity.kind"
 	PredicateCallsign             = "cop.identity.callsign"
-	PredicateLabel                = "cop.label"
-	PredicateDescription          = "cop.description"
+	PredicateLabel                = "cop.identity.label"
+	PredicateDescription          = "cop.content.description"
 	PredicateMessageText          = "cop.message.text"
-	PredicateMessageSenderUID     = "cop.message.sender_uid"
-	PredicateMessageSenderEntity  = "cop.message.sender_entity"
-	PredicateLastSeenUnixMS       = "cop.last_seen_unix_ms"
-	PredicatePositionLatitudeDeg  = "cop.position.latitude_deg"
-	PredicatePositionLongitudeDeg = "cop.position.longitude_deg"
-	PredicatePositionAltitudeM    = "cop.position.altitude_m"
-	PredicatePositionHeadingDeg   = "cop.position.heading_deg"
-	PredicatePositionSpeedMS      = "cop.position.speed_mps"
+	PredicateMessageSenderUID     = "cop.message.sender-uid"
+	PredicateMessageSenderEntity  = "cop.message.sender-entity"
+	PredicateLastSeenUnixMS       = "cop.state.last-seen-unix-ms"
+	PredicatePositionLatitudeDeg  = "cop.position.latitude-deg"
+	PredicatePositionLongitudeDeg = "cop.position.longitude-deg"
+	PredicatePositionAltitudeM    = "cop.position.altitude-m"
+	PredicatePositionHeadingDeg   = "cop.position.heading-deg"
+	PredicatePositionSpeedMS      = "cop.position.speed-mps"
 )
 
 const (

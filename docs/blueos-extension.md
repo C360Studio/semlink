@@ -4,6 +4,33 @@ SemLink's BlueOS lane packages the companion service as an Extension-style
 Docker image. This is a packaging and lifecycle proof, not a Navigator hardware
 claim.
 
+## Product Boundary
+
+BlueOS is treated as an optional vehicle appliance layer. It is valuable for
+Blue Robotics operators because it owns the onboard-computer UX around hardware
+bring-up, firmware and parameter management, networking, logs, MAVLink routing,
+camera/video services, and extension lifecycle.
+
+SemLink's BlueOS package is an adoption path for that ecosystem, not the center
+of the runtime architecture. The same SemLink companion contract must run as a
+plain native process, a SITL/UDP service, a companion-Pi service, or a BlueOS
+extension. Native MAVLink evidence remains the compatibility boundary;
+`/register_service` and BlueOS package lifecycle evidence are deployment
+metadata.
+
+Do not depend on BlueOS REST, MAVLink2REST, endpoint-manager state, SemOps,
+SemConnect, or CS API to prove package readiness. SemOps consumes SemLink as
+fleet COP/GCS glass, and SemConnect remains optional standards egress.
+
+SemStreams beta.160 packages default persistent embedded state to
+`SEMLINK_NATS_STATE_DIR=/data/nats-beta160`. First initialization stamps an
+empty namespace; graceful and unexpected restarts validate the exact stamp and
+reopen the same database. See
+[`semstreams-beta160-migration.md`](semstreams-beta160-migration.md) before
+changing package versions. No alpha/beta release transforms, copies, adopts,
+upgrades, or downgrades stored data, and incompatible state requires an
+explicit operator reset.
+
 Current BlueOS extension guidance treats an extension as a Docker image plus
 metadata. The image uses Docker labels for version, permissions, authors,
 maintainer/company, readme, links, type, and tags. SemLink uses

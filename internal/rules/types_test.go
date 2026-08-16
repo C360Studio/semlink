@@ -20,7 +20,7 @@ func TestNewTracePayloadDefaultsObserveOnlyAndProjectsInputEvidence(t *testing.T
 			{
 				Scope:      InputScopeLocal,
 				Subject:    "c360.semlink.robotics.fleet.drone.uav-001",
-				Predicate:  "robot.power.battery_remaining_pct",
+				Predicate:  "robot.power.battery-remaining-pct",
 				Object:     18,
 				Source:     "semlink.mavlink.decoder",
 				ObservedAt: evaluatedAt.Add(-time.Second),
@@ -29,7 +29,7 @@ func TestNewTracePayloadDefaultsObserveOnlyAndProjectsInputEvidence(t *testing.T
 			{
 				Scope:      InputScopeMesh,
 				Subject:    "c360.semlink.robotics.fleet.drone.uav-002",
-				Predicate:  "robot.position.ground_speed_mps",
+				Predicate:  "robot.position.ground-speed-mps",
 				Object:     0.8,
 				Source:     "semlink.mesh.summary",
 				ObservedAt: evaluatedAt.Add(-2 * time.Second),
@@ -71,6 +71,9 @@ func TestNewTracePayloadDefaultsObserveOnlyAndProjectsInputEvidence(t *testing.T
 	}
 	if projection.IndexingProfile != vocabulary.IndexingProfileTrace {
 		t.Fatalf("projection profile = %q, want trace", projection.IndexingProfile)
+	}
+	if projection.Contract != TraceType.String() || projection.Group != TraceGroup {
+		t.Fatalf("projection binding = %q/%q", projection.Contract, projection.Group)
 	}
 
 	triples := triplesByPredicate(projection.Triples)
@@ -127,6 +130,9 @@ func TestTraceContractDeclaresTraceProfileAndPredicates(t *testing.T) {
 	}
 	if contract.IndexingProfile != vocabulary.IndexingProfileTrace {
 		t.Fatalf("contract indexing profile = %q, want trace", contract.IndexingProfile)
+	}
+	if contract.Groups[0].Name != TraceGroup || contract.Groups[0].Mode != "reconcile" {
+		t.Fatalf("trace group = %#v", contract.Groups[0])
 	}
 	predicates := make(map[string]struct{})
 	for _, predicate := range contract.Groups[0].Predicates {

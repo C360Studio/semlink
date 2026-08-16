@@ -82,7 +82,18 @@ type MetricsView struct {
 	LastGraphLatencyMS float64   `json:"last_graph_latency_ms"`
 	NATSURL            string    `json:"nats_url"`
 	SemStreamsEmbedded bool      `json:"semstreams_embedded"`
+	StateSchemaVersion string    `json:"semstreams_state_schema_version"`
+	FreshState         bool      `json:"semstreams_fresh_state"`
+	ReusedState        bool      `json:"semstreams_reused_state"`
 	StartedAt          time.Time `json:"started_at"`
+}
+
+func (s *Store) SetSemStreamsStatePosture(schemaVersion string, fresh, reused bool) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	s.metrics.StateSchemaVersion = schemaVersion
+	s.metrics.FreshState = fresh
+	s.metrics.ReusedState = reused
 }
 
 type Store struct {

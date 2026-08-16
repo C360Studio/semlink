@@ -5,8 +5,8 @@ services:
       - "-c"
       - "/etc/nats/nats.conf"
     volumes:
-      - semlink-nats-data:/data
       - ${SEMLINK_ROOT:-.}/configs/compose/semlink-nats.conf:/etc/nats/nats.conf:ro
+      - semlink-nats-beta160-data:/data
     ports:
       - "${SEMLINK_NATS_HOST_PORT:-14224}:4222"
       - "${SEMLINK_NATS_MON_HOST_PORT:-18224}:8222"
@@ -53,4 +53,4 @@ services:
       start_period: 5s
 
 volumes:
-  semlink-nats-data:
+  semlink-nats-beta160-data:

@@ -12,8 +12,8 @@ import (
 
 func TestContractsValidateAndDeclareProfiles(t *testing.T) {
 	contracts := Contracts()
-	if _, err := projection.Derive(Owner, contracts...); err != nil {
-		t.Fatalf("Derive contracts: %v", err)
+	if err := projection.ValidateContracts(contracts); err != nil {
+		t.Fatalf("ValidateContracts: %v", err)
 	}
 	profiles := map[string]string{}
 	for _, contract := range contracts {
@@ -27,6 +27,11 @@ func TestContractsValidateAndDeclareProfiles(t *testing.T) {
 	}
 	if profiles["c360.semlink.cop.message.geochat.*"] != vocabulary.IndexingProfileContent {
 		t.Fatalf("message profile = %q", profiles["c360.semlink.cop.message.geochat.*"])
+	}
+	for _, contract := range contracts {
+		if len(contract.Groups) != 1 || contract.Groups[0].Name == "" || contract.Groups[0].Mode != projection.ModeReconcile {
+			t.Fatalf("contract %q groups = %#v", contract.Name, contract.Groups)
+		}
 	}
 }
 
@@ -66,6 +71,9 @@ func TestTranslatorProjectsOperatorMarkerAndMessage(t *testing.T) {
 	}
 	if operator.Projection.IndexingProfile != vocabulary.IndexingProfileSignal || operator.View.Kind != KindOperator {
 		t.Fatalf("operator result = %#v", operator)
+	}
+	if operator.Projection.Contract != OperatorType.String() || operator.Projection.Group != OperatorGroup {
+		t.Fatalf("operator binding = %q/%q", operator.Projection.Contract, operator.Projection.Group)
 	}
 
 	marker, ok, err := tr.Apply(cot.Event{

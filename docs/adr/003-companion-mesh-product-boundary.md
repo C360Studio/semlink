@@ -20,17 +20,24 @@ is `N` vehicle-local SemLink nodes running beside the autopilot, exchanging sele
 semantic current state across unreliable RF links, and giving operators or
 SemOps a coherent downstream view when connectivity permits.
 
-The SemStreams release pin was refreshed on 2026-07-06 to
-`v1.0.0-beta.141`. Recent upstream work includes OpenSpec 1.5 migration,
-`ENTITY_STATES` TTL correction, and graph-ingest observability/backpressure
-work. The mutation path still exposes local bookkeeping and concurrency
-surfaces:
+The SemStreams release pin was refreshed on 2026-08-16 to
+`v1.0.0-beta.160` at tag commit
+`8403a2218000e45a31c5132fbfe01af42ed04f14`. Beta.160 removes semantic
+ownership from projection contracts and supplies canonical mutation and
+authoritative exact-read adapters. The mutation path still exposes local
+bookkeeping and concurrency surfaces:
 
 - `EntityState.Version`
 - `EntityState.UpdatedAt`
 - `message.Triple.Timestamp`
-- `UpdateEntityWithTriplesRequest.ExpectedRevision`
-- mutation response `KVRevision`
+- revision-fenced named-group reconcile
+- mutation receipt and authoritative-read `KVRevision`
+
+SemLink has no production beta.141 state at this stage. First beta.160
+initialization requires an empty namespace and writes an exact durable schema
+stamp. Graceful and unexpected restarts validate that stamp and preserve the
+database. Alpha/beta releases never transform, copy, adopt, upgrade, or
+downgrade stored data.
 
 Those are useful for local state and CAS, but they are not a distributed
 causality or CRDT protocol. The SemLink mesh layer must therefore carry explicit
@@ -73,9 +80,10 @@ SemLink does not own a forward dashboard product.
 SemStreams owns:
 
 - NATS / JetStream substrate
-- graph-ingest mutation and query subjects
+- canonical graph mutation and authoritative-read APIs
 - local `ENTITY_STATES`
-- ownership and indexing-profile contracts
+- projection shape contracts with stable named operation groups
+- indexing-profile contracts
 - local CAS and revision metadata
 - generic substrate primitives discovered by the demo
 
@@ -178,7 +186,7 @@ WebSocket federation, because that keeps failure injection and demo inspection
 straightforward.
 
 NATS leaf nodes are attractive for edge deployments but should not be assumed to
-provide automatic ad hoc mesh semantics; topology, ownership, and duplicate
+provide automatic ad hoc mesh semantics; lifecycle topology and duplicate
 responders still need deliberate design. Zenoh remains a serious candidate for
 robotics-oriented peer/broker/hybrid data motion, especially if BlueOS extension
 deployment makes it convenient. Transport choice should be decided after the
@@ -197,7 +205,7 @@ SemConnect egress, and TAK / CoT bridge work. The next work should refactor and
 extend those pieces toward companion / mesh APIs, CLI/config, and external UI
 consumption rather than grow a SemLink-owned GCS.
 
-SemStreams index fixes should be adopted when the next tag lands, but they do
+SemStreams beta.160's canonical mutation, exact-read, and index behavior does
 not remove the need for explicit mesh causality metadata in SemLink.
 
 ## Open Questions

@@ -4,6 +4,8 @@ This document covers the SemLink-owned companion evidence demos and the optional
 SemGCS UI-backed bridge demo. The forward SemLink product shape is a
 companion service with CLI/config and UI-consumable local APIs; SemOps owns
 GCS/COP glass, and semstreams-ui can provide generic ops/debug views.
+BlueOS is an optional deployment appliance for Navigator/Pi operators, not a
+required producer path for these demos.
 
 ## Lightweight Companion Demos
 
@@ -144,6 +146,13 @@ with `semconnect` cloned beside it:
 ./scripts/demo-up.sh
 ```
 
+This is the supported start and restart path. It performs an idempotent Compose
+deployment without removing or force-recreating `semlink-nats`. The
+`semlink-nats-beta160-data` volume persists `/data`, so graceful and unexpected
+container restarts validate the exact beta.160 stamp and reopen the database.
+An empty namespace is required only for first initialization or an explicit
+incompatible-schema reset.
+
 If the sibling SemConnect checkout lives elsewhere, set `SEMCONNECT_ROOT` before
 running the script.
 
@@ -178,15 +187,16 @@ Use `./scripts/demo-down.sh` to tear down the stack.
 Use two NATS/SemStreams stacks for this first bridge demo:
 
 - SemLink NATS/SemStreams stack: local API, Svelte demo UI, raw MAVLink stream,
-  current-state graph, alerts, commands.
+  current-state graph, alerts, commands, and persistent beta.160 NATS volume.
 - SemConnect NATS/SemStreams stack: CS API Systems, Datastreams, Observations,
   SystemEvents, Commands.
 - HTTP bridge: decimated standards projection from SemLink into SemConnect.
 
 Do not point SemConnect at SemLink's embedded NATS unless the SemStreams graph
-backend ownership is planned explicitly. SemLink embeds `graph-ingest` for the
-demo runtime; SemConnect's read endpoints expect the fuller graph backend/index
-stack.
+processor topology is planned explicitly. SemLink embeds `graph-ingest` for
+the demo runtime; SemConnect's read endpoints expect the fuller graph
+backend/index stack. Projection contracts validate local shape and producer
+intent; they do not coordinate processor instances or authorize writes.
 
 ## Talk Track
 

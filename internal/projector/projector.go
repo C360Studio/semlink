@@ -110,7 +110,7 @@ func (p *Projector) Apply(msg mavlink.Message, observedAt time.Time) []Projectio
 	projections := []Projection{p.vehicleProjection(state)}
 	if alert, ok := p.lowBatteryAlert(state, observedAt); ok {
 		p.alerts[alert.ID] = alert
-		projections = append(projections, projectionFromPayload(&alert, AlertType, observedAt))
+		projections = append(projections, ProjectionFromPayload(&alert, AlertType, observedAt))
 	}
 	return projections
 }
@@ -139,7 +139,7 @@ func (p *Projector) CheckLinkTimeouts(now time.Time) []Projection {
 			RaisedAt:      now,
 		}
 		p.alerts[alert.ID] = alert
-		projections = append(projections, projectionFromPayload(&alert, AlertType, now))
+		projections = append(projections, ProjectionFromPayload(&alert, AlertType, now))
 	}
 	return projections
 }
@@ -185,7 +185,7 @@ func (p *Projector) stateFor(systemID uint8) *vehicleAccumulator {
 
 func (p *Projector) vehicleProjection(state *vehicleAccumulator) Projection {
 	payload := p.payload(state)
-	return projectionFromPayload(&payload, VehicleTelemetryType, payload.TelemetrySampleTime)
+	return ProjectionFromPayload(&payload, VehicleTelemetryType, payload.TelemetrySampleTime)
 }
 
 func (p *Projector) payload(state *vehicleAccumulator) VehicleStatePayload {

@@ -9,8 +9,27 @@ SemLink owns MAVLink decoding, simulator/replay adapters, companion runtime,
 CLI/config shape, local status/evidence APIs, and robotics language. SemOps
 owns broad GCS/COP glass. semstreams-ui can provide generic ops/debug views.
 SemStreams owns the semantic substrate: NATS/JetStream, graph-ingest,
-`ENTITY_STATES`, mutation/query subjects, projection contracts, and
-indexing-profile policy.
+`ENTITY_STATES`, canonical mutation and authoritative-read APIs, projection
+contracts, and indexing-profile policy. Projection contracts validate producer
+intent and graph shape; they do not reserve predicates or authorize writes.
+
+## Product Boundary
+
+SemLink is BlueOS-compatible, not BlueOS-dependent. Treat BlueOS as the
+vehicle appliance layer: useful for Navigator/Pi bring-up, firmware and
+parameter workflows, networking, logs, MAVLink routing, camera/video services,
+and extension lifecycle on Blue Robotics vehicles. SemLink does not try to
+replace that full appliance surface for the MVP.
+
+SemLink's lane is the vehicle-local semantic companion: native MAVLink ingest,
+bounded raw-frame handling, current-state projection, local rule/command
+evidence, optional selected-state mesh replication, and UI-consumable local
+APIs. BlueOS registration and package lifecycle are deployment metadata.
+MAVLink UDP, replay, and ArduPilot SITL remain the compatibility proof paths.
+
+SemOps is the fleet COP/GCS glass and command-governance consumer. SemConnect
+is the optional standards edge. Neither BlueOS REST/MAVLink2REST nor CS API is
+part of the SemLink hot path for the companion MVP.
 
 ## Quick Start
 
@@ -40,6 +59,8 @@ Use the path that matches the claim you need to prove:
 - Multi-companion mesh evidence report: `./scripts/demo-mesh-companions.sh`
 - UI or downstream consumer contract:
   [`docs/evidence-api.md`](docs/evidence-api.md)
+- SemStreams beta.160 schema, restart, and predicate migration:
+  [`docs/semstreams-beta160-migration.md`](docs/semstreams-beta160-migration.md)
 - ArduPilot SITL artifact proof:
   [`docs/sitl-ardurover.md`](docs/sitl-ardurover.md)
 - BlueOS-style package lifecycle:
@@ -69,6 +90,12 @@ the `semlink` checkout:
 ```bash
 ./scripts/demo-up.sh
 ```
+
+This supported launcher performs a normal idempotent deployment. It preserves
+the `semlink-nats` container and beta.160-specific named volume, so graceful or
+unexpected restarts reopen exact stamped beta.160 state. An empty namespace is
+required only for first initialization or an explicit incompatible-schema
+reset; see the beta.160 migration guide above.
 
 Then inspect:
 
@@ -143,7 +170,8 @@ standards-facing CS API view.
 For quick SemLink-only work, run without Docker Compose. This starts embedded
 NATS JetStream and the SemStreams graph-ingest component in-process. The
 current binary serves the Svelte demo UI, so build `ui/dist` when you want that
-local dashboard:
+local dashboard. This explicit development command omits `StateDir`, so it uses
+an owned temporary JetStream store:
 
 ```bash
 npm --prefix ui install
@@ -152,8 +180,11 @@ go run ./cmd/semgcs-demo -embedded-nats=true -vehicles=12 -hz=20
 ```
 
 Then use `http://127.0.0.1:8080` for the local API and Svelte demo UI. A shared
-NATS topology is a later integration mode and should run one deliberate owner
-for each SemStreams graph processor.
+NATS topology is a later integration mode and should run one deliberate active
+instance of each SemStreams graph processor. Set `SEMLINK_NATS_STATE_DIR` for
+persistent embedded state; packaged profiles default to `/data/nats-beta160`.
+External mode uses the same durable schema stamp. First initialization requires
+an empty namespace, while later exact beta.160 starts validate and reuse it.
 
 The demo uses a simulated MAVLink-like feed, but the frames are real unsigned
 MAVLink 2 envelopes for the subset we support now: `HEARTBEAT`, `SYS_STATUS`,
@@ -186,8 +217,9 @@ simulator / replay / ArduPilot SITL / MAVLink UDP input
   -> SemStreams circular buffer
   -> MAVLINK_RAW JetStream stream
   -> internal/projector current-state projection
-  -> SemStreams graph.mutation.entity.create_with_triples / update_with_triples
-  -> SemStreams graph.ingest.query.entity
+  -> SemStreams projection.MutationClient named-group reconcile
+  -> strict zero-triple envelope create when the entity is absent
+  -> SemStreams authoritative exact-entity read + same-entry KV revision
   -> local JSON/SSE status and evidence APIs
   -> optional Svelte demo UI
   -> optional SemConnect CS API bridge

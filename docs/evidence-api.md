@@ -29,8 +29,13 @@ COP fusion.
 
 ## Sections
 
-- `node`: node ID, runtime health, SemStreams mode, NATS URL, uptime, frame
-  counters, graph writes, graph errors, and buffer drops.
+- `node`: node ID, runtime health, SemStreams mode, NATS URL, state-schema
+  version, first-initialized/reused posture, uptime, frame counters, graph
+  writes, graph errors, and buffer drops. Ready beta.160 state reports
+  `semstreams_state_schema_version=beta.160`. The startup that CAS-creates the
+  stamp reports `semstreams_fresh_state=true`; a later exact-version start
+  reports `semstreams_reused_state=true`. These booleans are mutually exclusive
+  and derived from the stamp rather than caller input.
 - `profile`: handoff profile metadata for identity, HTTP listen address,
   BlueOS host port, SemStreams mode, MAVLink UDP input, simulator fallback,
   static mesh peers, optional CS API egress, command posture, and TAK bridge
@@ -64,6 +69,8 @@ COP fusion.
 This API keeps SemLink useful to UI products without making SemLink own the UI.
 SemOps owns GCS/COP glass. semstreams-ui can use the same response for
 ops/debug views. SemConnect remains the optional standards-facing egress path.
+BlueOS, when present, is deployment context for the companion package rather
+than a required evidence producer or runtime dependency.
 
 The `downstream` section is deliberately declarative. It lets external tools
 discover whether a consumer path is available without making that consumer a
@@ -91,6 +98,10 @@ MAVLink exclusion. These demos do not require SemOps,
 semstreams-ui, SemConnect/CS API, BlueOS, Navigator hardware, Gazebo, SITL, or
 physical MAVLink devices. They do use the SemLink Go module and the pinned
 SemStreams module version in `go.mod`.
+
+The breaking beta.160 predicate map, durable schema, restart, and targeted
+clear/reset rules are documented in
+[`semstreams-beta160-migration.md`](semstreams-beta160-migration.md).
 
 The demo commands can also emit a `semlink-companion-demo-artifact-v0` envelope
 for downstream SemOps ingestion by setting `SEMLINK_DEMO_ARTIFACT` in the
